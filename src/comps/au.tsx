@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useContext, useRef, useImperativeHandle} from 'react';
+import React, {useEffect, useState, useContext, useRef, useImperativeHandle, useMemo} from 'react';
 
 // types
 
@@ -8,14 +8,16 @@ type AudioIn = AudioNode | AudioParam;
 
 type AudioOut = AudioNode;
 
-type AudioOutRef = (node: AudioOut | null) => void;
+type AParamValue = AudioOut | number;
 
-type AParamValue = AudioOutRef | number;
+type AParamProp = AParamValue | AParamValue[] | null | undefined;
 
-type AParamProp = AParamValue | AParamValue[];
+type NodeRef = {
+  current: AudioOut | null;
+}
 
 type WithOut = {
-  nodeRef?: React.Ref<AudioOut | null>;
+  nodeRef?: NodeRef;
 };
 
 type WithInChild = React.FunctionComponentElement<WithOut> | AudioOut | null;
@@ -28,11 +30,11 @@ type WithIn = {
 
 // consts
 
-const defAudioCtx = new AudioContext();
+export const defAudioCtx = new AudioContext();
 
 const ACtx = React.createContext(defAudioCtx);
 
-const InContext = React.createContext<AudioIn | null>(defAudioCtx.destination);
+const InContext = React.createContext<AudioIn | null>(null);
 
 const theNodeIds = new WeakMap<AudioAny, string>();
 
@@ -63,10 +65,36 @@ function makeConn(from?: AudioOut | null, to?: AudioIn | null) {
   return <Conn key={`${getNodeId(from)}--${getNodeId(to)}`} from={from} to={to} />;
 }
 
+function asArray<T>(v: T | T[] | null | undefined): T[] {
+  if (Array.isArray(v)) return v;
+  if (v == null) return [];
+  return [v];
+}
+
 // hooks
 
-function useACtx() {
+export function useACtx() {
   return useContext(ACtx);
+}
+
+export function useNodeRef(): NodeRef {
+  const [node, setNode] = useState<AudioOut | null>(null);
+  return {
+    set current(n) { setNode(n); },
+    get current() { return node; },
+  };
+}
+
+export function useConst() {
+  const actx = useACtx();
+  const [node] = useState(actx.createConstantSource());
+  
+  useEffect(() => {
+    node.start();
+    return () => node.stop();
+  }, [node]);
+  
+  return node;
 }
 
 export function useOsc(type: OscillatorType) {
@@ -76,6 +104,11 @@ export function useOsc(type: OscillatorType) {
   useEffect(() => {
     node.type = type;
   }, [node, type]);
+
+  useEffect(() => {
+    node.start();
+    return () => node.stop();
+  }, [node]);
   
   return node;
 }
@@ -91,6 +124,13 @@ export function useFilter(type: BiquadFilterType) {
   return node;
 }
 
+export function useGain() {
+  const actx = useACtx();
+  const [node] = useState(actx.createGain());
+
+  return node;
+}
+
 // components
 
 type ConnProps = {
@@ -102,9 +142,11 @@ function Conn({from, to}: ConnProps) {
   useEffect(() => {
     if (!from) return;
     if (!to) return;
+    console.log('connect', from, to);
     doConnect(from, to);
     return () => {
       doDisconnect(from, to);
+      console.log('disconnect', from, to);
     };
   }, [from, to]);
   return null;
@@ -116,9 +158,9 @@ type NodeInProps = WithIn & {
 }
 
 export function NodeIn({node, children}: NodeInProps) {
-  const chs = Array.isArray(children) ? children : (children ? [children] : []);
+  const chs = asArray(children);
 
-  return <>
+return <>
     {chs.map((ch) => {
       if (ch instanceof AudioNode) return makeConn(ch, node);
       return null;
@@ -135,7 +177,9 @@ type NodeOutProps = WithOut & {
 export function NodeOut({node, nodeRef}: NodeOutProps) {
   const nodeIn = useContext(InContext);
 
-  useImperativeHandle(nodeRef, () => node, [node])
+  useEffect(() => {
+    if (nodeRef) nodeRef.current = node;
+  }, [nodeRef, node]);
 
   return makeConn(node, nodeIn);
 }
@@ -153,16 +197,59 @@ export function NodeInOut({node, nodeRef, children}: NodeInOutProps) {
 }
 
 
+type ParamInProps = {
+  children: AParamProp;
+  param: AudioParam;
+}
+
+export function ParamIn({param, children}: ParamInProps) {
+  const chs = asArray(children);
+
+  const nums = useMemo(() => chs.filter((child) => typeof child === 'number') as number[], [children]);
+  
+  useEffect(() => {
+    if (nums.length) param.value = nums.reduce((a, b) => a + b);
+  }, [nums]);
+
+  return <>
+    {chs.map((ch) => {
+      if (ch instanceof AudioNode) return makeConn(ch, param);
+      return null;
+    })}
+    {/* <InContext.Provider value={param}>{children}</InContext.Provider> */}
+  </>
+}
+
+
+
 type OscProps = WithOut & {
   type: OscillatorType,
   frequency?: AParamProp;
   detune?: AParamProp;
 };
 
-export function Osc({type, ...rest}: OscProps) {
+export function Osc({type, frequency, detune, ...rest}: OscProps) {
   const osc = useOsc(type);
 
-  return <NodeOut node={osc} {...rest} />;
+  return <>
+    <NodeOut node={osc} {...rest} />
+    <ParamIn param={osc.frequency}>{frequency}</ParamIn>
+    <ParamIn param={osc.detune}>{detune}</ParamIn>
+  </>;
+}
+
+
+type ConstProps = WithOut & {
+  value: AParamProp;
+};
+
+export function Const({value, ...rest}: ConstProps) {
+  const node = useConst();
+
+  return <>
+    <NodeOut node={node} {...rest} />
+    <ParamIn param={node.offset}>{value}</ParamIn>
+  </>;
 }
 
 
@@ -177,15 +264,23 @@ export function Filter({type, ...rest}: FilterProps) {
 }
 
 
-// test
+export function Destination(props: WithIn) {
+  const ctx = useACtx();
 
-export function OscFiltered() {
-  const [wire, setWire] = useState<AudioOut | null>(null);
-  return <>
-    <Filter type="lowpass">
-      {wire}
-      <Osc type="sine" />
-    </Filter>
-    <Osc type="sine" nodeRef={setWire} />
-  </>
+  return <NodeIn node={ctx.destination} {...props} />;
 }
+
+
+type GainProps = WithIn & WithOut & {
+  gain?: AParamProp;
+};
+
+export function Gain({gain, ...rest}: GainProps) {
+  const node = useGain();
+
+  return <>
+    <NodeInOut node={node} {...rest} />
+    <ParamIn param={node.gain}>{gain}</ParamIn>
+  </>;
+}
+
