@@ -1,44 +1,24 @@
-import React, {useEffect, useState, useContext} from 'react';
+import React, {useEffect, useState, useContext, useRef, useImperativeHandle} from 'react';
 
-const defAudioCtx = new AudioContext();
+// types
 
-const ACtx = React.createContext(defAudioCtx);
+type AudioAny = AudioNode | AudioParam;
 
-function useACtx() {
-  return useContext(ACtx);
-}
+type AudioIn = AudioNode | AudioParam;
 
-class Wire {
-  ins: Set<AudioNode> = new Set();
-  outs: Set<AudioNode> = new Set();
+type AudioOut = AudioNode;
 
-  addOut(outNode: AudioNode) {
-    this.ins.forEach(inNode => outNode.connect(inNode));
-    this.outs.add(outNode);
-  }
-  removeOut(outNode: AudioNode) {
-    this.ins.forEach(inNode => outNode.disconnect(inNode));
-    this.outs.delete(outNode);
-  }
-  addIn(inNode: AudioNode) {
-    this.outs.forEach(outNode => outNode.connect(inNode));
-    this.ins.add(inNode);
-  }
-  removeIn(inNode: AudioNode) {
-    this.outs.forEach(outNode => outNode.disconnect(inNode));
-    this.ins.delete(inNode);
-  }
-}
+type AudioOutRef = (node: AudioOut | null) => void;
 
-type AParamValue = Wire | number;
+type AParamValue = AudioOutRef | number;
 
 type AParamProp = AParamValue | AParamValue[];
 
 type WithOut = {
-  out?: Wire;
+  nodeRef?: React.Ref<AudioOut | null>;
 };
 
-type WithInChild = React.FunctionComponentElement<WithOut> | Wire;
+type WithInChild = React.FunctionComponentElement<WithOut> | AudioOut | null;
 
 type WithInChildren = WithInChild | WithInChild[];
 
@@ -46,63 +26,47 @@ type WithIn = {
   children: WithInChildren;
 }
 
-type OscProps = WithOut & {
-  type: OscillatorType,
-  frequency?: AParamProp;
-  detune?: AParamProp;
-};
+// consts
 
-export function useWire(): Wire {
-  return new Wire();
+const defAudioCtx = new AudioContext();
+
+const ACtx = React.createContext(defAudioCtx);
+
+const InContext = React.createContext<AudioIn | null>(defAudioCtx.destination);
+
+const theNodeIds = new WeakMap<AudioAny, string>();
+
+let theLastId = 0;
+
+// utils
+
+function getNodeId(node?: AudioAny | null): string {
+  if (!node) return '';
+  let id = theNodeIds.get(node);
+  if (id) return id;
+  id = `${node.constructor.name}-${++theLastId}`;
+  theNodeIds.set(node, id);
+  return id;
 }
 
-const InContext = React.createContext<AudioNode | null>(defAudioCtx.destination);
-
-export function useOut(node: AudioNode, out?: Wire) {
-  const inNode = useContext(InContext);
-
-  useEffect(() => {
-    if (!inNode) return;
-    node.connect(inNode);
-    return () => {
-      node.disconnect(inNode);
-    }
-  }, [inNode, node]);
-
-  useEffect(() => {
-    if (!out) return;
-    out.addOut(node);
-    return () => {
-      out.removeOut(node);
-    }
-  }, [out]);
+function doConnect(from: AudioOut, to: AudioIn) {
+  // @ts-ignore
+  from.connect(to);
 }
 
-export function useIn(node: AudioNode, children: WithInChildren) {
-  useEffect(() => {
-    const chs = Array.isArray(children) ? children : (children ? [children] : []);
-    for (const ch of chs) {
-      if (ch instanceof Wire) {
-        ch.addIn(node);
-      }
-    }
-    return () => {
-      for (const ch of chs) {
-        if (ch instanceof Wire) {
-          ch.removeIn(node);
-        }
-      }
-    }
-  }, [node, children]);
+function doDisconnect(from: AudioOut, to: AudioIn) {
+  // @ts-ignore
+  from.disconnect(to);
 }
 
-type InProps = WithIn & {
-  node: AudioNode;
+function makeConn(from?: AudioOut | null, to?: AudioIn | null) {
+  return <Conn key={`${getNodeId(from)}--${getNodeId(to)}`} from={from} to={to} />;
 }
 
-export function In({node, children}: InProps) {
-  useIn(node, children);
-  return <InContext.Provider value={node}>{children}</InContext.Provider>;
+// hooks
+
+function useACtx() {
+  return useContext(ACtx);
 }
 
 export function useOsc(type: OscillatorType) {
@@ -127,38 +91,101 @@ export function useFilter(type: BiquadFilterType) {
   return node;
 }
 
-export function Osc({type, out}: OscProps) {
-  const osc = useOsc(type);
+// components
 
-  useOut(osc, out);
+type ConnProps = {
+  from?: AudioOut | null;
+  to?: AudioIn | null;
+};
 
+function Conn({from, to}: ConnProps) {
   useEffect(() => {
-    console.log('OSC', type);
-  }, [type]);
-
+    if (!from) return;
+    if (!to) return;
+    doConnect(from, to);
+    return () => {
+      doDisconnect(from, to);
+    };
+  }, [from, to]);
   return null;
 }
+
+
+type NodeInProps = WithIn & {
+  node: AudioIn;
+}
+
+export function NodeIn({node, children}: NodeInProps) {
+  const chs = Array.isArray(children) ? children : (children ? [children] : []);
+
+  return <>
+    {chs.map((ch) => {
+      if (ch instanceof AudioNode) return makeConn(ch, node);
+      return null;
+    })}
+    <InContext.Provider value={node}>{children}</InContext.Provider>
+  </>
+}
+
+
+type NodeOutProps = WithOut & {
+  node: AudioOut;
+}
+
+export function NodeOut({node, nodeRef}: NodeOutProps) {
+  const nodeIn = useContext(InContext);
+
+  useImperativeHandle(nodeRef, () => node, [node])
+
+  return makeConn(node, nodeIn);
+}
+
+
+type NodeInOutProps = WithIn & WithOut & {
+  node: AudioOut;
+}
+
+export function NodeInOut({node, nodeRef, children}: NodeInOutProps) {
+  return <>
+    <NodeIn node={node}>{children}</NodeIn>
+    <NodeOut node={node} nodeRef={nodeRef} />
+  </>;
+}
+
+
+type OscProps = WithOut & {
+  type: OscillatorType,
+  frequency?: AParamProp;
+  detune?: AParamProp;
+};
+
+export function Osc({type, ...rest}: OscProps) {
+  const osc = useOsc(type);
+
+  return <NodeOut node={osc} {...rest} />;
+}
+
 
 type FilterProps = WithOut & WithIn & {
   type: BiquadFilterType;
 };
 
-export function Filter({type, children, out}: FilterProps) {
+export function Filter({type, ...rest}: FilterProps) {
   const flt = useFilter(type);
 
-  useOut(flt, out);
-
-  return (
-    <In node={flt}>{children}</In>
-  )
+  return <NodeInOut node={flt} {...rest} />;
 }
 
+
+// test
+
 export function OscFiltered() {
-  const wire = useWire();
-  return (
+  const [wire, setWire] = useState<AudioOut | null>(null);
+  return <>
     <Filter type="lowpass">
       {wire}
       <Osc type="sine" />
     </Filter>
-  )
+    <Osc type="sine" nodeRef={setWire} />
+  </>
 }
