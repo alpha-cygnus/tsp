@@ -2,6 +2,9 @@ import React, { useCallback, useState, useRef } from 'react';
 import './App.css';
 import {defAudioCtx, useNodeRef, Osc, Filter, Destination, Gain, Const} from './comps/au';
 
+import * as E from './comps/evs';
+
+
 function App() {
   const [playing, setPlaying] = useState(false);
 
@@ -33,3 +36,6 @@ function App() {
 }
 
 export default App;
+
+// @ts-ignore
+window.E = E;
