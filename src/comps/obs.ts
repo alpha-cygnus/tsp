@@ -3,13 +3,22 @@ import React, {createContext, useContext, useEffect, useMemo} from 'react';
 import {Observable, Subscriber, pipe, EMPTY, from, merge} from 'rxjs';
 import {filter, map, concatAll} from 'rxjs/operators';
 
-import {Time, Timed, Clock, MidiEvent, ParamEvent, peCancel, peLinear, peValue, MidiOn, isTriggerOff, isTriggerOn} from './evs';
+import {
+  Timed,
+  Clock,
+  MidiEvent,
+  ParamEvent,
+  TimedObs,
+  ParamEvents,
+  MidiToParamEvents,
+} from './types';
 
-export type TimedObs<V> = Observable<Timed<V>>;
-
-export type MidiEvents = TimedObs<MidiEvent>;
-
-export type ParamEvents = TimedObs<ParamEvent>;
+import {
+  peCancel,
+  peLinear,
+  isTriggerOff,
+  isTriggerOn,
+} from './evs';
 
 export function createSender<V>(clock: Clock): [TimedObs<V>, (v: V) => void] {
   let theSub: Subscriber<Timed<V>>;
@@ -21,8 +30,6 @@ export function createSender<V>(clock: Clock): [TimedObs<V>, (v: V) => void] {
   }
   return [obs, send];
 }
-
-export type MidiToParamEvents = (midis: MidiEvents) => ParamEvents;
 
 export const timedFrom = <V>(vs: Array<Timed<V>>): TimedObs<V> => {
   return from(vs);
@@ -48,16 +55,3 @@ export const linADSR = (a: number, d: number, s: number, r: number): MidiToParam
   );
   return merge(ads, rs);
 }
-
-export class AudioClock implements Clock {
-  ctx: AudioContext;
-  lag: number;
-  constructor (ctx: AudioContext, lag: number = 0) {
-    this.ctx = ctx;
-    this.lag = lag;
-  }
-  now() {
-    return this.ctx.currentTime * 1000 + this.lag;
-  }
-}
-

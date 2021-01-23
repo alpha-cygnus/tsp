@@ -1,6 +1,6 @@
-import {useEffect, createContext, useContext} from 'react';
+import {ParamEvent, MidiEvent} from './types';
 
-export class MidiEvent {
+export class MidiEventBase implements MidiEvent {
   ch: number;
 
   constructor (ch: number) {
@@ -8,7 +8,7 @@ export class MidiEvent {
   }
 }
 
-export class MidiOn extends MidiEvent {
+export class MidiOn extends MidiEventBase {
   note: number;
   vel: number;
   
@@ -19,7 +19,7 @@ export class MidiOn extends MidiEvent {
   }
 }
 
-export class MidiOff extends MidiEvent {
+export class MidiOff extends MidiEventBase {
   note: number;
   vel: number;
   
@@ -30,15 +30,9 @@ export class MidiOff extends MidiEvent {
   }
 }
 
-export class ParamEvent {
-  apply(param: AudioParam, t: number) {
-  }
-}
-
-export class PEValue extends ParamEvent {
+export class PEValue implements ParamEvent {
   v: number;
   constructor (v: number) {
-    super();
     this.v = v;
   }
   apply(param: AudioParam, t: number) {
@@ -48,10 +42,9 @@ export class PEValue extends ParamEvent {
 
 export const peValue = (v: number) => new PEValue(v);
 
-export class PELinear extends ParamEvent {
+export class PELinear implements ParamEvent {
   v: number;
   constructor (v: number) {
-    super();
     this.v = v;
   }
   apply(param: AudioParam, t: number) {
@@ -61,7 +54,7 @@ export class PELinear extends ParamEvent {
 
 export const peLinear = (v: number) => new PELinear(v);
 
-export class PECancel extends ParamEvent {
+export class PECancel implements ParamEvent {
   apply(param: AudioParam, t: number) {
     if (param.cancelAndHoldAtTime) param.cancelAndHoldAtTime(t);
     else param.cancelScheduledValues(t);
@@ -69,14 +62,6 @@ export class PECancel extends ParamEvent {
 }
 
 export const peCancel = () => new PECancel();
-
-export type Time = number;
-
-export type Timed<V> = [V, Time];
-
-export interface Clock {
-  now(): Time;
-}
 
 export function isTriggerOn(me: MidiEvent): boolean {
   if (me instanceof MidiOn) return true;

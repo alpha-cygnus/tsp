@@ -2,39 +2,35 @@ import React, {useEffect, useState, useContext, useRef, useImperativeHandle, use
 
 // types
 
-type AudioAny = AudioNode | AudioParam;
+import {
+  AParamProp,
+  AudioAny,
+  AudioIn,
+  AudioOut,
+  NodeRef,
+  WithIn,
+  WithOut,
+  Clock,
+  MidiToParamEvents,
+} from './types';
 
-type AudioIn = AudioNode | AudioParam;
+import {
+  useACtx,
+  NodeInContext,
+  MidiEventsContext,
+} from './ctx';
 
-type AudioOut = AudioNode;
-
-type AParamValue = AudioOut | number;
-
-type AParamProp = AParamValue | AParamValue[] | null | undefined;
-
-type NodeRef = {
-  current: AudioOut | null;
+export class AudioClock implements Clock {
+  ctx: AudioContext;
+  lag: number;
+  constructor (ctx: AudioContext, lag: number = 0) {
+    this.ctx = ctx;
+    this.lag = lag;
+  }
+  now() {
+    return this.ctx.currentTime * 1000 + this.lag;
+  }
 }
-
-type WithOut = {
-  nodeRef?: NodeRef;
-};
-
-type WithInChild = React.FunctionComponentElement<WithOut> | AudioOut | null;
-
-type WithInChildren = WithInChild | WithInChild[];
-
-type WithIn = {
-  children: WithInChildren;
-}
-
-// consts
-
-export const defAudioCtx = new AudioContext();
-
-const ACtx = React.createContext(defAudioCtx);
-
-const InContext = React.createContext<AudioIn | null>(null);
 
 const theNodeIds = new WeakMap<AudioAny, string>();
 
@@ -72,10 +68,6 @@ function asArray<T>(v: T | T[] | null | undefined): T[] {
 }
 
 // hooks
-
-export function useACtx() {
-  return useContext(ACtx);
-}
 
 export function useNodeRef(): NodeRef {
   const [node, setNode] = useState<AudioOut | null>(null);
@@ -165,7 +157,7 @@ return <>
       if (ch instanceof AudioNode) return makeConn(ch, node);
       return null;
     })}
-    <InContext.Provider value={node}>{children}</InContext.Provider>
+    <NodeInContext.Provider value={node}>{children}</NodeInContext.Provider>
   </>
 }
 
@@ -175,7 +167,7 @@ type NodeOutProps = WithOut & {
 }
 
 export function NodeOut({node, nodeRef}: NodeOutProps) {
-  const nodeIn = useContext(InContext);
+  const nodeIn = useContext(NodeInContext);
 
   useEffect(() => {
     if (nodeRef) nodeRef.current = node;
@@ -196,6 +188,18 @@ export function NodeInOut({node, nodeRef, children}: NodeInOutProps) {
   </>;
 }
 
+function ParamFromMidi({param, midiToParam}: {param: AudioParam; midiToParam: MidiToParamEvents}) {
+  const midis = useContext(MidiEventsContext);
+
+  useEffect(() => {
+    const subscription = midis.pipe(midiToParam).subscribe(([pe, t]) => {
+      pe.apply(param, t / 1000);
+    });
+    return () => subscription.unsubscribe();
+  }, [param, midis]);
+
+  return null;
+}
 
 type ParamInProps = {
   children: AParamProp;
@@ -205,18 +209,33 @@ type ParamInProps = {
 export function ParamIn({param, children}: ParamInProps) {
   const chs = asArray(children);
 
-  const nums = useMemo(() => chs.filter((child) => typeof child === 'number') as number[], [children]);
-  
+  const {nodes, nums, m2ps} = useMemo(() => {
+    const m2ps: Array<MidiToParamEvents> = [];
+    const nums: Array<number> = [];
+    const nodes: Array<AudioNode> = [];
+    for (const child of chs) {
+      if (!child) continue;
+      if (child instanceof AudioNode) {
+        nodes.push(child);
+        continue;
+      }
+      if (typeof child === 'number') {
+        nums.push(child);
+        continue;
+      }
+      m2ps.push(child);
+    }
+    return {m2ps, nums, nodes};
+  }, [chs]);
+
   useEffect(() => {
     if (nums.length) param.value = nums.reduce((a, b) => a + b);
+    else param.value = param.defaultValue;
   }, [nums]);
 
   return <>
-    {chs.map((ch) => {
-      if (ch instanceof AudioNode) return makeConn(ch, param);
-      return null;
-    })}
-    {/* <InContext.Provider value={param}>{children}</InContext.Provider> */}
+    {nodes.map((child) => makeConn(child, param))}
+    {m2ps.map((child) => <ParamFromMidi param={param} midiToParam={child} />)}
   </>
 }
 

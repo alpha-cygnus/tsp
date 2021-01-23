@@ -1,27 +1,12 @@
-import React, {useEffect, createContext, useContext, useMemo} from 'react';
+import React, {useMemo} from 'react';
 
-import {EMPTY} from 'rxjs';
+import {MidiEvent, Time} from './types';
 
-import {MidiEvent, ParamEvent, Time} from './evs';
+import {createSender} from './obs';
 
-import {MidiEvents, ParamEvents, MidiToParamEvents, AudioClock, createSender} from './obs';
+import {AudioClock} from './au';
 
-import {useACtx} from './au';
-
-export const MidiEventsContext = createContext<MidiEvents>(EMPTY);
-
-export const MidiSenderContext = createContext<(me: MidiEvent) => void>(() => {});
-
-function useMidiToParam(param: AudioParam, midiToParam: MidiToParamEvents) {
-  const midis = useContext(MidiEventsContext);
-
-  useEffect(() => {
-    const subscription = midis.pipe(midiToParam).subscribe(([pe, t]) => {
-      pe.apply(param, t / 1000);
-    });
-    return () => subscription.unsubscribe();
-  }, [param, midis]);
-}
+import {useACtx, MidiEventsContext, MidiSenderContext} from './ctx';
 
 export function MidiRoot({lag = 0, children}: {lag: Time, children: any}) {
   const ctx = useACtx();
@@ -36,3 +21,4 @@ export function MidiRoot({lag = 0, children}: {lag: Time, children: any}) {
     </MidiEventsContext.Provider>
   </MidiSenderContext.Provider>
 }
+
