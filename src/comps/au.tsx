@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useContext, useRef, useImperativeHandle, useMemo} from 'react';
+import React, {useEffect, useState, useMemo} from 'react';
 
 // types
 
@@ -17,7 +17,8 @@ import {
 import {
   useACtx,
   NodeInContext,
-  MidiEventsContext,
+  useMidiEvents,
+  useNodeIn,
 } from './ctx';
 
 export class AudioClock implements Clock {
@@ -167,7 +168,7 @@ type NodeOutProps = WithOut & {
 }
 
 export function NodeOut({node, nodeRef}: NodeOutProps) {
-  const nodeIn = useContext(NodeInContext);
+  const nodeIn = useNodeIn();
 
   useEffect(() => {
     if (nodeRef) nodeRef.current = node;
@@ -189,14 +190,14 @@ export function NodeInOut({node, nodeRef, children}: NodeInOutProps) {
 }
 
 function ParamFromMidi({param, midiToParam}: {param: AudioParam; midiToParam: MidiToParamEvents}) {
-  const midis = useContext(MidiEventsContext);
+  const midis = useMidiEvents();
 
   useEffect(() => {
     const subscription = midis.pipe(midiToParam).subscribe(([pe, t]) => {
       pe.apply(param, t / 1000);
     });
     return () => subscription.unsubscribe();
-  }, [param, midis]);
+  }, [param, midis, midiToParam]);
 
   return null;
 }
@@ -231,7 +232,7 @@ export function ParamIn({param, children}: ParamInProps) {
   useEffect(() => {
     if (nums.length) param.value = nums.reduce((a, b) => a + b);
     else param.value = param.defaultValue;
-  }, [nums]);
+  }, [nums, param]);
 
   return <>
     {nodes.map((child) => makeConn(child, param))}

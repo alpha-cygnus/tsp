@@ -1,6 +1,4 @@
-import React, {createContext, useContext, useEffect, useMemo} from 'react';
-
-import {Observable, Subscriber, pipe, EMPTY, from, merge} from 'rxjs';
+import {Observable, Subscriber, from, merge} from 'rxjs';
 import {filter, map, concatAll} from 'rxjs/operators';
 
 import {
