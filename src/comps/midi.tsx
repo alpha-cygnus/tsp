@@ -1,8 +1,8 @@
-import React, {useMemo, useState, useEffect} from 'react';
+import React, {useMemo, useState, useEffect, useRef} from 'react';
 
-import {MidiEvent, Time} from './types';
+import {MidiEvent, Time, Timed} from './types';
 
-import {createSender} from './obs';
+import {createSender} from './xs';
 
 import {AudioClock} from './au';
 
@@ -22,6 +22,15 @@ export function MidiRoot({lag = 0, children}: {lag: Time, children: any}) {
 
   const [midis, send] = useMemo(() => createSender<MidiEvent>(clock), [clock]);
 
+  useEffect(() => {
+    const sub = midis.subscribe({
+      next: ([me, t]: Timed<MidiEvent>) => {
+       console.log('ME', me, t);
+      }
+    });
+    return () => sub.unsubscribe();
+  }, [midis]);
+
   return <MidiSenderContext.Provider value={send}>
     <MidiEventsContext.Provider value={midis}>
       {children}
@@ -32,19 +41,27 @@ export function MidiRoot({lag = 0, children}: {lag: Time, children: any}) {
 export function TestSender() {
   const send = useMidiSender();
   const [pressed, setPressed] = useState(false);
+  const first = useRef(true);
 
   useEffect(() => {
-    if (pressed) send(midiOn(0, 60, 100));
-    else send(midiOff(0, 60, 100));
+    if (pressed) {
+      console.log('ON!');
+      send(midiOn(0, 60, 100));
+    } else {
+      if (first.current) {
+        first.current = false;
+        return;
+      }
+      console.log('OFF!');
+      send(midiOff(0, 60, 100));
+    }
   }, [send, pressed]);
 
-  <div
+  return <div
     className={`test-sender ${pressed ? 'pressed' : ''}`}
     onMouseDown={() => setPressed(true)}
     onMouseUp={() => setPressed(false)}
   >
     PRESS ME
   </div>
-
-  return null;
 }

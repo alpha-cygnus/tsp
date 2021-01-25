@@ -12,6 +12,8 @@ import {
   WithOut,
   Clock,
   MidiToParamEvents,
+  Timed,
+  ParamEvent,
 } from './types';
 
 import {
@@ -29,7 +31,7 @@ export class AudioClock implements Clock {
     this.lag = lag;
   }
   now() {
-    return this.ctx.currentTime * 1000 + this.lag;
+    return this.ctx.currentTime + this.lag;
   }
 }
 
@@ -135,7 +137,7 @@ function Conn({from, to}: ConnProps) {
   useEffect(() => {
     if (!from) return;
     if (!to) return;
-    console.log('connect', from, to);
+    console.log('connect', getNodeId(from), '->', getNodeId(to));
     doConnect(from, to);
     return () => {
       doDisconnect(from, to);
@@ -191,13 +193,20 @@ export function NodeInOut({node, nodeRef, children}: NodeInOutProps) {
 
 function ParamFromMidi({param, midiToParam}: {param: AudioParam; midiToParam: MidiToParamEvents}) {
   const midis = useMidiEvents();
+  const actx = useACtx();
+
+  const paramEvents = useMemo(() => {
+    return midiToParam(midis);
+  }, [midis, midiToParam]);
 
   useEffect(() => {
-    const subscription = midis.pipe(midiToParam).subscribe(([pe, t]) => {
-      pe.apply(param, t / 1000);
+    const subscription = paramEvents.subscribe({
+      next: ([pe, t]: Timed<ParamEvent>) => {
+        pe.apply(param, t);
+      },
     });
     return () => subscription.unsubscribe();
-  }, [param, midis, midiToParam]);
+  }, [param, paramEvents, actx]);
 
   return null;
 }
@@ -205,9 +214,10 @@ function ParamFromMidi({param, midiToParam}: {param: AudioParam; midiToParam: Mi
 type ParamInProps = {
   children: AParamProp;
   param: AudioParam;
+  name: string;
 }
 
-export function ParamIn({param, children}: ParamInProps) {
+export function ParamIn({param, children, name}: ParamInProps) {
   const chs = asArray(children);
 
   const {nodes, nums, m2ps} = useMemo(() => {
@@ -215,7 +225,7 @@ export function ParamIn({param, children}: ParamInProps) {
     const nums: Array<number> = [];
     const nodes: Array<AudioNode> = [];
     for (const child of chs) {
-      if (!child) continue;
+      if (child == null) continue;
       if (child instanceof AudioNode) {
         nodes.push(child);
         continue;
@@ -232,11 +242,12 @@ export function ParamIn({param, children}: ParamInProps) {
   useEffect(() => {
     if (nums.length) param.value = nums.reduce((a, b) => a + b);
     else param.value = param.defaultValue;
-  }, [nums, param]);
+    console.log('setting', name, getNodeId(param), '=', param.value, nums);
+  }, [nums, param, name]);
 
   return <>
     {nodes.map((child) => makeConn(child, param))}
-    {m2ps.map((child) => <ParamFromMidi param={param} midiToParam={child} />)}
+    {m2ps.map((child, i) => <ParamFromMidi key={i} param={param} midiToParam={child} />)}
   </>
 }
 
@@ -253,8 +264,8 @@ export function Osc({type, frequency, detune, ...rest}: OscProps) {
 
   return <>
     <NodeOut node={osc} {...rest} />
-    <ParamIn param={osc.frequency}>{frequency}</ParamIn>
-    <ParamIn param={osc.detune}>{detune}</ParamIn>
+    <ParamIn name="freq" param={osc.frequency}>{frequency}</ParamIn>
+    <ParamIn name="detune" param={osc.detune}>{detune}</ParamIn>
   </>;
 }
 
@@ -268,7 +279,7 @@ export function Const({value, ...rest}: ConstProps) {
 
   return <>
     <NodeOut node={node} {...rest} />
-    <ParamIn param={node.offset}>{value}</ParamIn>
+    <ParamIn name="value" param={node.offset}>{value}</ParamIn>
   </>;
 }
 
@@ -300,7 +311,7 @@ export function Gain({gain, ...rest}: GainProps) {
 
   return <>
     <NodeInOut node={node} {...rest} />
-    <ParamIn param={node.gain}>{gain}</ParamIn>
+    <ParamIn name="gain" param={node.gain}>{gain}</ParamIn>
   </>;
 }
 

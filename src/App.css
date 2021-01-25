@@ -36,3 +36,13 @@
     transform: rotate(360deg);
   }
 }
+
+.test-sender {
+  cursor: pointer;
+  padding: 4px;
+  background-color: green;
+}
+
+.test-sender.pressed {
+  background-color: red;
+}

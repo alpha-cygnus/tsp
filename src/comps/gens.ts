@@ -99,7 +99,7 @@ export const midiToLinADSR = (a: number, d: number, s: number, r: number) => asy
       this.ctx = ctx;
     }
     now() {
-      return this.ctx.currentTime * 1000;
+      return this.ctx.currentTime;
     }
   }
   
@@ -118,7 +118,7 @@ export const midiToLinADSR = (a: number, d: number, s: number, r: number) => asy
       async function * run() {
         for await (const [pe, t] of midiToParam(midiEvents)) {
           if (stopped) return;
-          pe.apply(param, t / 1000);
+          pe.apply(param, t);
         }
       }
       run();
