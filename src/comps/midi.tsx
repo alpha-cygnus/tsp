@@ -1,4 +1,5 @@
 import React, {useMemo, useState, useEffect, useRef} from 'react';
+import cs from 'classnames';
 
 import {MidiEvent, Time, Timed, MidiToMidiEvents} from './types';
 
@@ -39,7 +40,15 @@ export function MidiRoot({lag = 0, children}: {lag: Time, children: any}) {
   </MidiSenderContext.Provider>
 }
 
-export function TestSender() {
+type NoteSenderProps = {
+  ch?: number;
+  note?: number;
+  vel?: number;
+  className: string;
+  children: any;
+};
+
+export function NoteSender({ch = 0, note = 60, className, children}: NoteSenderProps) {
   const send = useMidiSender();
   const [pressed, setPressed] = useState(false);
   const first = useRef(true);
@@ -47,23 +56,23 @@ export function TestSender() {
   useEffect(() => {
     if (pressed) {
       console.log('ON!');
-      send(midiOn(0, 60, 100));
+      send(midiOn(ch, note, 100));
     } else {
       if (first.current) {
         first.current = false;
         return;
       }
       console.log('OFF!');
-      send(midiOff(0, 60, 100));
+      send(midiOff(ch, note, 100));
     }
-  }, [send, pressed]);
+  }, [send, pressed, ch, note]);
 
   return <div
-    className={`test-sender ${pressed ? 'pressed' : ''}`}
+    className={cs(className, {pressed})}
     onMouseDown={() => setPressed(true)}
     onMouseUp={() => setPressed(false)}
   >
-    PRESS ME
+    {children}
   </div>
 }
 
@@ -76,4 +85,10 @@ export function MidiFilter({filter, children}: MidiFilterProps) {
   const midis = useMidiEvents();
   const output = useMemo(() => filter(midis), [filter, midis]);
   return <MidiEventsContext.Provider value={output}>{children}</MidiEventsContext.Provider>;
+}
+
+
+export function Ptn({children}: any) {
+  console.log('Ptn:', children);
+  return null;
 }

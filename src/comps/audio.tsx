@@ -21,7 +21,7 @@ import {
   NodeInContext,
   useMidiEvents,
   useNodeIn,
-} from './ctx';
+} from './contexts';
 
 export class AudioClock implements Clock {
   ctx: AudioContext;
@@ -240,10 +240,10 @@ export function ParamIn({param, children, name}: ParamInProps) {
   }, [chs]);
 
   useEffect(() => {
-    if (nums.length) param.value = nums.reduce((a, b) => a + b);
+    if (nums.length || m2ps.length) param.value = nums.reduce((a, b) => a + b, 0);
     else param.value = param.defaultValue;
     console.log('setting', name, getNodeId(param), '=', param.value, nums);
-  }, [nums, param, name]);
+  }, [nums.join(','), m2ps.length, param, name]);
 
   return <>
     {nodes.map((child) => makeConn(child, param))}

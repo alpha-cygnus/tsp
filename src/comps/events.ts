@@ -42,6 +42,9 @@ export class PEValue implements ParamEvent {
   apply(param: AudioParam, t: number) {
     param.setValueAtTime(this.v, t);
   }
+  mul(v: number) {
+    return new PEValue(this.v * v);
+  }
 }
 
 export const peValue = (v: number) => new PEValue(v);
@@ -53,6 +56,9 @@ export class PELinear implements ParamEvent {
   }
   apply(param: AudioParam, t: number) {
     param.linearRampToValueAtTime(this.v, t);
+  }
+  mul(v: number) {
+    return new PELinear(this.v * v);
   }
 }
 
@@ -68,6 +74,9 @@ export class PETarget implements ParamEvent {
   apply(param: AudioParam, t: number) {
     param.setTargetAtTime(this.v, t, this.tc);
   }
+  mul(v: number) {
+    return new PETarget(this.v * v, this.tc);
+  }
 }
 
 export const peTarget = (v: number, tc: number) => new PETarget(v, tc);
@@ -78,6 +87,9 @@ export class PECancel implements ParamEvent {
     param.cancelAndHoldAtTime(t);
     // else
     param.cancelScheduledValues(t);
+  }
+  mul(v: number) {
+    return this;
   }
 }
 

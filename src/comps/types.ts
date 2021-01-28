@@ -36,6 +36,7 @@ export interface MidiEvent {
 
 export interface ParamEvent {
   apply: (param: AudioParam, t: number) => void;
+  mul: (v: number) => ParamEvent;
 }
 
 export type TimedObs<V> = Stream<Timed<V>>;
@@ -44,10 +45,14 @@ export type MidiEvents = TimedObs<MidiEvent>;
 
 export type ParamEvents = TimedObs<ParamEvent>;
 
-export type MidiToParamEvents = (midis: MidiEvents) => ParamEvents;
-
-export type AParamValue = AudioOut | number | MidiToParamEvents;
+export type AParamValue = AudioOut | number | MidiToParamEvents | null | undefined;
 
 export type AParamProp = AParamValue | AParamValue[] | null | undefined;
 
 export type MidiToMidiEvents = (midis: MidiEvents) => MidiEvents;
+
+export type MidiToParamEvents = (midis: MidiEvents) => ParamEvents;
+
+export type ParamToParamEvents = (midis: ParamEvents) => ParamEvents;
+
+export {Stream};

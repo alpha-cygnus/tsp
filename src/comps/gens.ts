@@ -2,7 +2,7 @@ import {createContext, useContext, useEffect} from 'react';
 
 import {Time, Timed, Clock, MidiEvent, ParamEvent} from './types';
 
-import {peCancel, peLinear, peValue, MidiOn, isTriggerOff, isTriggerOn} from './evs';
+import {peCancel, peLinear, peValue, MidiOn, isTriggerOff, isTriggerOn} from './events';
 
 type TimedIterable<V> = AsyncIterable<Timed<V>>;
 
