@@ -4,7 +4,9 @@ import xs from 'xstream';
 
 import {AudioIn, MidiEvents, MidiEvent} from './types';
 
-export const defAudioCtx = new AudioContext();
+export const defAudioCtx = new AudioContext({
+  latencyHint: "playback",
+});
 
 export const ACtx = createContext(defAudioCtx);
 
