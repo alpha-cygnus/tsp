@@ -1,19 +1,20 @@
 import React, {useMemo, useState, useEffect, useRef} from 'react';
 
-import {MidiEvent, Time, Timed} from './types';
+import {MidiEvent, Time, Timed, MidiToMidiEvents} from './types';
 
-import {createSender} from './xs';
+import {createSender} from './streams';
 
-import {AudioClock} from './au';
+import {AudioClock} from './audio';
 
 import {
   useACtx,
   MidiEventsContext,
   MidiSenderContext,
   useMidiSender,
-} from './ctx';
+  useMidiEvents,
+} from './contexts';
 
-import {midiOn, midiOff} from './evs';
+import {midiOn, midiOff} from './events';
 
 export function MidiRoot({lag = 0, children}: {lag: Time, children: any}) {
   const ctx = useACtx();
@@ -64,4 +65,15 @@ export function TestSender() {
   >
     PRESS ME
   </div>
+}
+
+type MidiFilterProps = {
+  filter: MidiToMidiEvents;
+  children: any;
+};
+
+export function MidiFilter({filter, children}: MidiFilterProps) {
+  const midis = useMidiEvents();
+  const output = useMemo(() => filter(midis), [filter, midis]);
+  return <MidiEventsContext.Provider value={output}>{children}</MidiEventsContext.Provider>;
 }
