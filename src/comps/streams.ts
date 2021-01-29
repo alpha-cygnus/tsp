@@ -104,13 +104,13 @@ export const noteToFrequency: MidiToParamEvents = pipe(
   filterVal((me) => me instanceof MidiOn),
   mapVal((me) => peValue((Math.pow(2, (me as MidiOn).note - 69) / 12) * 440) as ParamEvent),
 );
-  // .filter(([me]) => me instanceof MidiOn)
-  // .map(([me, t]) => [peValue((me as MidiOn).note) as ParamEvent, t]);
 
 export const midiChannel = memoize(
   (channel: number): MidiToMidiEvents => filterVal((me) => me.ch === channel)
 );
 
 export const delay = memoize((dt: number): ParamToParamEvents => mapTime((t) => t + dt));
+
+export const randomDelay = memoize((dt: number): MidiToMidiEvents => mapTime((t) => t + Math.random()*dt));
 
 export const mul = memoize((v: number): ParamToParamEvents => mapVal((pe) => pe.mul(v)));
