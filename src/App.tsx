@@ -3,7 +3,7 @@ import './App.css';
 import {useNodeRef, Osc, Filter, Destination, Gain, Cut} from './comps/audio';
 
 import { MidiRoot, ChordSender, MidiFilter, Ptn } from './comps/midi';
-import { adsr, noteToDetune, midiChannel, pipe, mul, delay } from './comps/streams';
+import { adsr, noteToDetune, midiChannel, pipe, mul, delay, randomDelay } from './comps/streams';
 
 import {Key} from '@tonaljs/tonal';
 
@@ -41,14 +41,16 @@ function App() {
           <Destination>
             <Gain gain={0.3}>
               <MidiFilter filter={midiChannel(0)}>
-                <TestSyn freq={440} />
+                <MidiFilter filter={randomDelay(0.1)}>
+                  <TestSyn freq={440} />
+                </MidiFilter>
               </MidiFilter>
               <MidiFilter filter={midiChannel(1)}>
                 <TestSyn freq={440} />
               </MidiFilter>
             </Gain>
           </Destination>
-          <ChordSender ch={0} chord="Cmaj" className="test-sender" /> 
+          <ChordSender ch={0} chord="CM" className="test-sender" /> 
           <ChordSender ch={1} chord="Cmin" className="test-sender" /> 
         </>}
       </div>
