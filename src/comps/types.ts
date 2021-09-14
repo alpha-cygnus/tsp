@@ -14,7 +14,7 @@ export type WithOut = {
   nodeRef?: NodeRef;
 };
 
-export type WithInChild = React.FunctionComponentElement<WithOut> | AudioOut | null;
+export type WithInChild = React.ReactElement<WithOut> | AudioOut | NodeRef | null;
 
 export type WithInChildren = WithInChild | WithInChild[];
 
@@ -45,9 +45,9 @@ export type MidiEvents = TimedObs<MidiEvent>;
 
 export type ParamEvents = TimedObs<ParamEvent>;
 
-export type AParamValue = AudioOut | number | MidiToParamEvents | null | undefined;
+export type AParamValue = WithInChild | number | ParamEvents | undefined;
 
-export type AParamProp = AParamValue | AParamValue[] | null | undefined;
+export type AParamProp = AParamValue | AParamValue[];
 
 export type MidiToMidiEvents = (midis: MidiEvents) => MidiEvents;
 

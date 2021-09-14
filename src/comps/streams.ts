@@ -22,6 +22,7 @@ import {
   isTriggerOn,
   MidiOn,
 } from './events';
+import { throws } from 'assert';
 
 export function createSender<V>(clock: Clock): [TimedObs<V>, (v: V) => void] {
   let theSub: Listener<Timed<V>>;
@@ -105,12 +106,14 @@ export const noteToFrequency: MidiToParamEvents = pipe(
   mapVal((me) => peValue((Math.pow(2, (me as MidiOn).note - 69) / 12) * 440) as ParamEvent),
 );
 
-export const midiChannel = memoize(
-  (channel: number): MidiToMidiEvents => filterVal((me) => me.ch === channel)
-);
+export const midiChannel = (channel: number): MidiToMidiEvents => filterVal((me) => me.ch === channel);
 
-export const delay = memoize((dt: number): ParamToParamEvents => mapTime((t) => t + dt));
+export const delay = (dt: number): ParamToParamEvents => mapTime((t) => t + dt);
 
-export const randomDelay = memoize((dt: number): MidiToMidiEvents => mapTime((t) => t + Math.random()*dt));
+export const randomDelay = (dt: number): MidiToMidiEvents => mapTime((t) => t + Math.random()*dt);
 
-export const mul = memoize((v: number): ParamToParamEvents => mapVal((pe) => pe.mul(v)));
+export const mul = (v: number): ParamToParamEvents => mapVal((pe) => pe.mul(v));
+
+// export function clock(): Stream<Time> {
+//   return null;
+// }

@@ -4,7 +4,7 @@ import {Chord, Midi} from '@tonaljs/tonal';
 
 import {MidiEvent, Time, Timed, MidiToMidiEvents} from './types';
 
-import {createSender} from './streams';
+import {createSender, midiChannel} from './streams';
 
 import {AudioClock} from './audio';
 
@@ -78,13 +78,13 @@ export function NoteSender({ch = 0, note = 60, className, children}: NoteSenderP
 }
 
 type ChordSenderProps = {
-  ch?: number;
+  chs?: number[];
   chord: string;
   vel?: number;
   className: string;
 };
 
-export function ChordSender({ch = 0, chord, className}: ChordSenderProps) {
+export function ChordSender({chs = [0], chord, className}: ChordSenderProps) {
   const send = useMidiSender();
   const [pressed, setPressed] = useState(false);
 
@@ -101,15 +101,19 @@ export function ChordSender({ch = 0, chord, className}: ChordSenderProps) {
   useEffect(() => {
     if (!pressed) return undefined;
 
-    for (const note of midiNotes) {
+    for (let i = 0; i < midiNotes.length; i++) {
+      const note = midiNotes[i];
+      const ch = chs[i % chs.length];
       send(midiOn(ch, note, 100));
     }
     return () => {
-      for (const note of midiNotes) {
+      for (let i = 0; i < midiNotes.length; i++) {
+        const note = midiNotes[i];
+        const ch = chs[i % chs.length];
         send(midiOff(ch, note, 100));
       }
     }
-  }, [send, pressed, ch, midiNotes]);
+  }, [send, pressed, chs, midiNotes]);
 
   return <div
     className={cs(className, {pressed})}
@@ -131,8 +135,13 @@ export function MidiFilter({filter, children}: MidiFilterProps) {
   return <MidiEventsContext.Provider value={output}>{children}</MidiEventsContext.Provider>;
 }
 
+export function MidiChannel({ch, children}: {ch: number; children: any}) {
+  return <MidiFilter
+    filter={midiChannel(ch)}
+  >{children}</MidiFilter>;
+}
 
-export function Ptn({children}: any) {
-  console.log('Ptn:', children);
+export function Ptn({children, d}: any) {
+  console.log('Ptn:', children, JSON.stringify(d));
   return null;
 }
