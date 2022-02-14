@@ -1,6 +1,6 @@
 import {Timed} from '../common/types';
 import {TimedHS} from '../hs/types';
-import {use$flatMap} from '../hs/hooks';
+import {useSFlatMap} from '../hs/hooks';
 import {MidiEvent} from './types';
 import {isTriggerOff, isTriggerOn} from './utils';
 
@@ -10,6 +10,6 @@ const trigFmap = ([me, t]: Timed<MidiEvent>): Timed<boolean>[] => {
   return [];
 };
 
-export function use$onOff(midi$: TimedHS<MidiEvent>): TimedHS<boolean> {
-  return use$flatMap(midi$, trigFmap);
+export function useSOnOff(midi$: TimedHS<MidiEvent>): TimedHS<boolean> {
+  return useSFlatMap(midi$, trigFmap);
 }

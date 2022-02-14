@@ -2,10 +2,10 @@ import {useCallback} from 'react';
 
 import {Timed} from '../common/types';
 import {TimedHS} from '../hs/types';
-import {use$flatMap} from '../hs/hooks';
+import {useSFlatMap} from '../hs/hooks';
 import {ParamEvent, peCancel, peTarget} from '../params/types';
 
-export function use$adsr(
+export function useSADSR(
   trig$: TimedHS<boolean>,
   a: number,
   d: number,
@@ -14,7 +14,7 @@ export function use$adsr(
   max: number = 1,
   del: number = 0,
 ) {
-  return use$flatMap(trig$, useCallback(([v, t]: Timed<boolean>): Timed<ParamEvent>[] => {
+  return useSFlatMap(trig$, useCallback(([v, t]: Timed<boolean>): Timed<ParamEvent>[] => {
     if (v) {
       return  [
         [peCancel(), t + del],
@@ -27,5 +27,5 @@ export function use$adsr(
         [peTarget(0, r / 4), t],
       ]
     }
-  }, [a, d, s, r]));
+  }, [a, d, s, r, max, del]));
 }

@@ -2,17 +2,17 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 
 import {HS, HSOptions, defaultOptions, Listener} from './types';
 
-export function use$new<T>(options: HSOptions = defaultOptions): HS<T> {
+export function useSNew<T>(options: HSOptions = defaultOptions): HS<T> {
   const [s] = useState(new HS<T>(options));
   return s;
 }
 
-export function use$listen<T>(h$: HS<T>, listen: Listener<T>) {
+export function useSListen<T>(h$: HS<T>, listen: Listener<T>) {
   useEffect(() => h$.subscribe(listen), [h$, listen]);
 }
 
-export function use$flatMap<A, B>(src$: HS<A>, fmap: (a: A) => B[]) {
-  const re$ = use$new<B>();
+export function useSFlatMap<A, B>(src$: HS<A>, fmap: (a: A) => B[]) {
+  const re$ = useSNew<B>();
   
   const listen = useCallback((a: A) => {
     const bs = fmap(a);
@@ -21,21 +21,21 @@ export function use$flatMap<A, B>(src$: HS<A>, fmap: (a: A) => B[]) {
     }
   }, [fmap, re$]);
   
-  use$listen(src$, listen);
+  useSListen(src$, listen);
   
   return re$;
 }
 
-export function use$map<A, B>(src$: HS<A>, map: (a: A) => B) {
-  return use$flatMap(src$, useCallback((a: A) => [map(a)], []));
+export function useSMap<A, B>(src$: HS<A>, map: (a: A) => B) {
+  return useSFlatMap(src$, useCallback((a: A) => [map(a)], [map]));
 }
 
-export function use$filter<A>(src$: HS<A>, filter: (a: A) => boolean) {
-  return use$flatMap(src$, useCallback((a: A) => filter(a) ? [a] : [], []));
+export function useSFilter<A>(src$: HS<A>, filter: (a: A) => boolean) {
+  return useSFlatMap(src$, useCallback((a: A) => filter(a) ? [a] : [], [filter]));
 }
 
-export function use$changes<T>(v: T) {
-  const re$ = use$new<T>();
+export function useSChanges<T>(v: T) {
+  const re$ = useSNew<T>();
 
   useEffect(() => {
     re$.send(v);
@@ -47,12 +47,12 @@ export function use$changes<T>(v: T) {
 type Arr = any[];
 type HSList<TS extends Arr> = {[T in keyof TS]: HS<T>};
 
-export function use$combine<TS extends Arr, R>(
+export function useSCombine<TS extends Arr, R>(
   hs$: HSList<TS>,
   combine: (...args: TS) => R,
   defs: TS,
 ): HS<R> {
-  const r$ = use$new<R>();
+  const r$ = useSNew<R>();
   const vs = useRef<TS>([...defs] as TS);
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export function use$combine<TS extends Arr, R>(
     return () => {
       for (const unsub of unsubs) unsub();
     }
-  }, [hs$, combine]);
+  }, [hs$, combine, r$]);
 
   return r$;
 }

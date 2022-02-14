@@ -2,15 +2,15 @@ import React, {useEffect, useMemo, ReactElement} from 'react';
 
 import {Timed} from '../common/types';
 import {ParamEvent, ParamEvents} from '../params/types';
-import {use$adsr} from '../params/hs';
+import {useSADSR} from '../params/hs';
 import {useMidiEvents} from '../midi/ctx';
-import {use$onOff} from '../midi/hs';
-import {use$map} from '../hs/hooks';
+import {useSOnOff} from '../midi/hs';
 
 import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
 import {NodeInContext, useNodeIn, useACtx} from './ctx';
 import {useConst, useFilter, useGain, useOsc} from './hooks';
+import { HS } from '../hs/types';
 
 
 type ConnProps = {
@@ -119,14 +119,14 @@ type ParamInProps = {
 export function ParamIn({param, children, name}: ParamInProps) {
   const chs = asArray(children);
 
-  const {nodes, nums, evs} = useMemo(() => {
+  const {nodes, num, evs} = useMemo(() => {
     const evs: Array<ParamEvents> = [];
-    const nums: Array<number> = [];
+    let num: number | null = null;
     const nodes: WithInChildren = [];
     for (const child of chs) {
       if (child == null) continue;
       if (typeof child === 'number') {
-        nums.push(child);
+        num = (num || 0) + child;
         continue;
       }
       if (child instanceof AudioNode) {
@@ -141,16 +141,18 @@ export function ParamIn({param, children, name}: ParamInProps) {
         nodes.push(child);
         continue;
       }
-      evs.push(child);
+      if (child instanceof HS) {
+        evs.push(child);
+      }
     }
-    return {evs, nums, nodes};
+    return {evs, num, nodes};
   }, [chs]);
 
   useEffect(() => {
-    if (nums.length || evs.length) param.value = nums.reduce((a, b) => a + b, 0);
+    if (num != null || evs.length) param.value = num || 0;
     else param.value = param.defaultValue;
-    console.log('setting', name, getNodeId(param), '=', param.value, nums);
-  }, [nums.join(','), evs.length, param, name]);
+    console.log('setting', name, getNodeId(param), '=', param.value, num);
+  }, [num, evs.length, param, name]);
 
   return <>
     <NodeIn node={param}>
@@ -281,8 +283,8 @@ export function ADSR({
   ...without
 }: ADSRProps) {
   const midi$ = useMidiEvents();
-  const trig$ = use$onOff(midi$);
-  const adsr$ = use$adsr(trig$, a, d, s, r, max, del);
+  const trig$ = useSOnOff(midi$);
+  const adsr$ = useSADSR(trig$, a, d, s, r, max, del);
 
   if (children) {
     return <Gain name={name} gain={[0, adsr$]} {...without}>

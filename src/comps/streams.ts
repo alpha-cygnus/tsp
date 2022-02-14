@@ -22,7 +22,6 @@ import {
   isTriggerOn,
   MidiOn,
 } from './events';
-import { throws } from 'assert';
 
 export function createSender<V>(clock: Clock): [TimedObs<V>, (v: V) => void] {
   let theSub: Listener<Timed<V>>;

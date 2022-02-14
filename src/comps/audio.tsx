@@ -227,7 +227,6 @@ export function NodeInOut({node, nodeRef, children}: NodeInOutProps) {
 }
 
 function ParamFromEvents({param, events}: {param: AudioParam; events: ParamEvents}) {
-  const midis = useMidiEvents();
   const actx = useACtx();
 
   useEffect(() => {
@@ -283,6 +282,7 @@ export function ParamIn({param, children, name}: ParamInProps) {
     if (nums.length || evs.length) param.value = nums.reduce((a, b) => a + b, 0);
     else param.value = param.defaultValue;
     console.log('setting', name, getNodeId(param), '=', param.value, nums);
+    // eslint-disable-next-line
   }, [nums.join(','), evs.length, param, name]);
 
   return <>
