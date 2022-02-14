@@ -11,13 +11,15 @@ export function use$adsr(
   d: number,
   s: number,
   r: number,
+  max: number = 1,
+  del: number = 0,
 ) {
   return use$flatMap(trig$, useCallback(([v, t]: Timed<boolean>): Timed<ParamEvent>[] => {
     if (v) {
       return  [
-        [peCancel(), t],
-        [peTarget(1, a / 4), t],
-        [peTarget(s, d / 4), t + d],
+        [peCancel(), t + del],
+        [peTarget(max, a / 4), t + del],
+        [peTarget(s * max, d / 4), t + d + del],
       ];
     } else {
       return [

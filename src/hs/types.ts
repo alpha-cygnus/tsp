@@ -14,12 +14,14 @@ export class HS<T> {
   constructor(options: HSOptions = defaultOptions) {
     this._options = options;
   }
+  
   subscribe(listener: Listener<T>): Unsub {
     this._subs.add(listener);
     return () => {
       this._subs.delete(listener);
     }
   }
+  
   send(v: T) {
     for (const l of this._subs) {
       l(v);

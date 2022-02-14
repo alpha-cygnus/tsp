@@ -3,7 +3,8 @@ import './App.css';
 import {useNodeRef, useNoteToDetune, Osc, Filter, Destination, Gain, Cut, ADSR} from './comps/audio';
 
 import { MidiRoot, ChordSender, MidiFilter, Ptn, MidiChannel } from './comps/midi';
-import { midiChannel, randomDelay } from './comps/streams';
+
+import {Part} from './score/comps';
 
 import {Key} from '@tonaljs/tonal';
 
@@ -95,9 +96,8 @@ function App() {
         text line
         What is it?
       </Ptn>
-      <pre>
-        {JSON.stringify(Key.minorKey('C'), null, 2)}
-      </pre>
+      <Part>kb3 s4/4 a5 r10 c4. ^5. abcdefg
+        | s6/8 t8 a]a]a[[bb]]</Part>
     </MidiRoot>
   );
 }
