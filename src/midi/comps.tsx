@@ -1,32 +1,9 @@
-import React, {useMemo} from 'react';
+import {useCallback, useMemo} from 'react';
 
-import {useACtx} from '../audio/ctx';
+import { MidiEvent } from './types';
 
-import {} from './types';
-import {} from './ctx';
-
-// export function MidiRoot({lag = 0, children}: {lag: Time, children: any}) {
-//   const ctx = useACtx();
-
-//   const clock = useMemo(() => new AudioClock(ctx, lag), [ctx, lag]);
-
-//   const [midis, send] = useMemo(() => createSender<MidiEvent>(clock), [clock]);
-
-//   useEffect(() => {
-//     const sub = midis.subscribe({
-//       next: ([me, t]: Timed<MidiEvent>) => {
-//        console.log('ME', me, t);
-//       }
-//     });
-//     return () => sub.unsubscribe();
-//   }, [midis]);
-
-//   return <MidiSenderContext.Provider value={send}>
-//     <MidiEventsContext.Provider value={midis}>
-//       {children}
-//     </MidiEventsContext.Provider>
-//   </MidiSenderContext.Provider>
-// }
+import {useMidiEvents, useRootCtx, RootCtx} from '../root/ctx';
+import { useSTFilter } from '../hs/hooks';
 
 // type NoteSenderProps = {
 //   ch?: number;
@@ -111,24 +88,27 @@ import {} from './ctx';
 //   </div>
 // }
 
-// type MidiFilterProps = {
-//   filter: MidiToMidiEvents;
-//   children: any;
-// };
+type MidiFilterProps = {
+  filter: (me: MidiEvent) => boolean;
+  children: any;
+};
 
-// export function MidiFilter({filter, children}: MidiFilterProps) {
-//   const midis = useMidiEvents();
-//   const output = useMemo(() => filter(midis), [filter, midis]);
-//   return <MidiEventsContext.Provider value={output}>{children}</MidiEventsContext.Provider>;
-// }
+export function MidiFilter({filter, children}: MidiFilterProps) {
+  const midis = useMidiEvents();
+  const newEvents = useSTFilter(midis, filter);
+  const rctx = useRootCtx();
+  const newCtx = useMemo(() => ({
+    ...rctx,
+    midiEvents: newEvents,
+  }), [rctx, newEvents]);
+  return <RootCtx.Provider value={newCtx}>{children}</RootCtx.Provider>;
+}
 
-// export function MidiChannel({ch, children}: {ch: number; children: any}) {
-//   return <MidiFilter
-//     filter={midiChannel(ch)}
-//   >{children}</MidiFilter>;
-// }
-
-// export function Ptn({children, d}: any) {
-//   console.log('Ptn:', children, JSON.stringify(d));
-//   return null;
-// }
+export function MidiChannel({ch, children}: {ch: number; children: any}) {
+  const filter = useCallback((me: MidiEvent): boolean => {
+    return me.ch === ch;
+  }, [ch]);
+  return <MidiFilter filter={filter}>
+    {children}
+  </MidiFilter>;
+}

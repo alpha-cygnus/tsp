@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 
-import {HS, HSOptions, defaultOptions, Listener} from './types';
+import {Timed} from '../common/types';
+import {HS, HSOptions, defaultOptions, Listener, TimedHS} from './types';
 
 export function useSNew<T>(options: HSOptions = defaultOptions): HS<T> {
   const [s] = useState(new HS<T>(options));
@@ -69,3 +70,7 @@ export function useSCombine<TS extends Arr, R>(
   return r$;
 }
 
+export function useSTFilter<T>(src: TimedHS<T>, filter: (v: T) => boolean) {
+  const flt = useCallback(([v]: Timed<T>) => filter(v), [filter]);
+  return useSFilter(src, flt);
+}
