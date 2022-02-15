@@ -1,151 +1,7 @@
-import produce from 'immer';
-import { addRatio, subRatio } from '../common/math';
+import {addRatio, subRatio} from '../common/math';
 import {Ratio} from '../common/types';
+import {Parse, parseString, eq, many, many1, map, mapData, match, oneOf, opt, seq, trim} from '../common/parse';
 
-type Loc<D> = {
-	i: number;
-	l: number;
-	c: number;
-	data: D;
-};
-
-type Parse<T, D> = (s: string, loc: Loc<D>) => [T, Loc<D>];
-
-export class ParseError<D> extends Error {
-	loc: Loc<D>;
-
-	constructor(desc: string, loc: Loc<D>) {
-		super(desc);
-		this.loc = loc;
-	}
-}
-
-function _locInc<D>(loc: Loc<D>, by: string): Loc<D> {
-	const res = {...loc};
-	res.i += by.length;
-	for (const c of by) {
-		switch (c) {
-			case '\n':
-				res.c = 0;
-				res.l++;
-				break;
-			case '\r':
-				res.c = 0;
-				break;
-			case '\t':
-				res.c += 8;
-				break;
-			default:
-				res.c++;
-				break;
-		}
-	}
-	return res;
-}
-
-function opt<T, D>(p: Parse<T, D>): Parse<T | null, D> {
-	return (s, loc) => {
-		try {
-			return p(s, loc);
-		} catch {
-			return [null, loc];
-		}
-	}
-}
-
-function many<T, D>(p: Parse<T, D>): Parse<T[], D> {
- 	return (s, loc) => {
-		const res: T[] = [];
-		for (;;) {
-			try {
-				const [t, l] = p(s, loc);
-				res.push(t);
-				loc = l;
-			} catch {
-				break;
-			}
-		}
-		return [res, loc];
-	}
-}
-
-function eq<D = any>(str: string): Parse<string, D> {
-	return (s, loc) => {
-		if (s.slice(loc.i).startsWith(str)) {
-			return [str, _locInc(loc, str)];
-		}
-		throw new ParseError(`${str} expected`, loc);
-	}
-}
-
-function match<D = any>(re: RegExp, desc: string): Parse<string, D> {
-	return (s, loc) => {
-		const m = s.slice(loc.i).match(re);
-		if (!m || (m.index || 0) > 0) throw new ParseError(`Expected ${desc}`, loc);
-		const res = m[0];
-		return [res, _locInc(loc, res)];
-	}
-}
-
-const ews = <D>(): Parse<string, D> => match(/[ \r\n\t]*/, ' ');
-
-type ParseList<TS extends [...any[]], D> = {[I in keyof TS]: Parse<TS[I], D>};
-
-function seq<TS extends [...any[]], D>(...ps: ParseList<TS, D>): Parse<TS, D> {
-	return (s, loc) => {
-		// @ts-ignore
-		const rs: TS = ps.map((p, i) => {
-			const [r, l] = p(s, loc);
-			loc = l;
-			return r;
-		});
-		return [rs, loc];
-	}
-}
-
-function map<A, B, D>(p: Parse<A, D>, f: (a: A, data: D) => B): Parse<B, D> {
-	return (s, loc) => {
-		const [r, l] = p(s, loc);
-		let res: B;
-		let resLoc = produce((l) => {
-			res = f(r, l.data);
-		})(l);
-		// @ts-ignore
-		return [res, resLoc];
-	}
-}
-
-function mapData<T, D>(p: Parse<T, D>, f: (data: D, t: T) => void): Parse<null, D> {
-	return (s, loc) => {
-		const [r, l] = p(s, loc);
-		const resLoc = produce((l) => {
-			f(l.data, r);
-		})(l);
-		return [null, resLoc];
-	}
-}
-
-function oneOf<T, D>(...ps: Parse<T, D>[]): Parse<T, D> {
-	return (s, loc) => {
-		let es: ParseError<D>[] = [];
-		for (const p of ps) {
-			try {
-				return p(s, loc);
-			} catch(e) {
-				if (e instanceof ParseError) {
-					es.push(e);
-				} else {
-					throw e;
-				}
-			}
-		}
-		throw new ParseError(`one of (${es.map((e) => e.message).join(',')})`, loc);
-	}
-}
-
-function trim<T, D>(p: Parse<T, D>): Parse<T, D> {
-	return map(seq(ews(), p, ews()), ([, t,]) => t);
-}
 
 // Bar Code
 
@@ -155,8 +11,24 @@ type BarNoteData = {
 	oct: number;
 	key: Key;
 	bar: number;
+	vel: number;
+	beat: Dur;
 	repitch: Record<string, number>;
 };
+
+const initBarNoteData: BarNoteData = {
+	sig: [4, 4],
+	dur: [1, 4],
+	oct: 5,
+	key: {
+		fs: 1,
+		pitches: '',
+	},
+	bar: 0,
+	vel: 100,
+	beat: [1, 4],
+	repitch: {},
+}
 
 type Bar = {
 	key: Key | null;
@@ -232,7 +104,7 @@ const noteSymToNum = {
 
 const note: Parse<Note, BarNoteData> = map(
 	seq(match(/[cdefgab]/i, 'note'), opt(fs), opt(durDot)),
-	([n, fs, dur], data): Note => {
+	([n, fs, dur], data, setData): Note => {
 		const nn = n.toUpperCase();
 		const {repitch, oct} = data;
 		// @ts-ignore
@@ -241,13 +113,15 @@ const note: Parse<Note, BarNoteData> = map(
 			note += repitch[nn] || 0;
 		} else {
 			note += fs;
-			data.repitch[nn] = fs;
+			setData(({repitch}) => {
+				repitch[nn] = fs;
+			});
 		}
 		note += oct * 12;
 		return {
 			_: 'note',
 			note,
-			dur: dur || [...data.dur],
+			dur: dur || data.dur,
 		};
 	}
 );
@@ -257,7 +131,7 @@ const rest: Parse<Rest, BarNoteData> = map(
 	([, dur], data): Rest => {
 		return {
 			_: 'rest',
-			dur: dur || [...data.dur],
+			dur: dur || data.dur,
 		};
 	}
 );
@@ -266,7 +140,7 @@ const tie: Parse<Tie, BarNoteData> = map(
 	seq(eq('^'), opt(durDot)),
 	([, dur], data): Tie => ({
 		_: 'tie',
-		dur: dur || [...data.dur],
+		dur: dur || data.dur,
 	}),
 );
 
@@ -278,19 +152,33 @@ const octSet: Parse<null, BarNoteData> = mapData(
 );
 
 const durSet: Parse<null, BarNoteData> = mapData(
-	seq(eq('t'), dur),
+	seq(eq('l'), dur),
 	(data, [, dur]) => {
 		data.dur = dur;
 	},
 );
 
+const velSet: Parse<null, BarNoteData> = mapData(
+	seq(eq('v'), num),
+	(data, [, n]) => {
+		data.vel = n;
+	},
+);
+
+const beatSet: Parse<null, BarNoteData> = mapData(
+	seq(eq('q'), dur),
+	(data, [, dur]) => {
+		data.beat = dur;
+	},
+);
+
 const octUp: Parse<null, BarNoteData> = mapData(
-	match(/[>)\]]/, 'oct up'),
+	match(/[>)]/, 'oct up'),
 	(data) => { data.oct++; },
 );
 
 const octDown: Parse<null, BarNoteData> = mapData(
-	match(/[<([]/, 'oct down'),
+	match(/[<(]/, 'oct down'),
 	(data) => { data.oct--; },
 );
 
@@ -329,7 +217,7 @@ const bar: Parse<Bar, BarNoteData> = map(
 	seq(
 		opt(trim(key)),
 		opt(trim(sig)),
-		many(trim(oneOf<BarItem | null, BarNoteData>(note, rest, tie, octSet, octUp, octDown, durSet))),
+		many1(trim(oneOf<BarItem | null, BarNoteData>(note, rest, tie, octSet, octUp, octDown, durSet, beatSet, velSet))),
 	),
 	([, , itemsNull], data): Bar => {
 		const {key, sig, bar} = data;
@@ -357,18 +245,4 @@ export const bars: Parse<Bar[], BarNoteData> = map(
 	([bar0, bs]) => [bar0, ...bs.map(([, b]) => b)],
 );
 
-export const parseString = <T>(p: Parse<T, BarNoteData>) => (s: string): T => {
-	const [res, loc] = p(s, {i: 0, l: 0, c: 0, data: {
-		dur: [1, 4],
-		sig: [4, 4],
-		oct: 5,
-		key: {pitches: '', fs: -1},
-		bar: 0,
-		repitch: {},
-	}});
-	console.log(loc);
-	if (loc.i < s.length) throw new ParseError('Smth wrong here', loc);
-	return res;
-}
-
-export const parseBarCode = parseString(bars);
+export const parseBarCode = parseString(bars, initBarNoteData);
