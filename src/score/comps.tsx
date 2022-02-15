@@ -1,6 +1,7 @@
 import {useEffect} from 'react';
 
-import {parseBarCode, ParseError} from './parse';
+import {ParseError} from '../common/parse';
+import {parseBarCode} from './bar-notes';
 
 
 export function Part({children}: {children: string}) {
