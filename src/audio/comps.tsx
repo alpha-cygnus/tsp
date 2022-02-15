@@ -8,9 +8,10 @@ import {useSOnOff} from '../midi/hs';
 
 import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
-import {NodeInContext, useNodeIn, useACtx} from './ctx';
+import {NodeInContext, useNodeIn} from './ctx';
 import {useConst, useFilter, useGain, useOsc} from './hooks';
-import { HS } from '../hs/types';
+import {HS} from '../hs/types';
+import {useACtx} from '../root/ctx';
 
 
 type ConnProps = {
