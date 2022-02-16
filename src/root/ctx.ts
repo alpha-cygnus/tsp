@@ -1,10 +1,15 @@
 import {createContext, useCallback, useContext} from 'react';
 import {MidiEvent, MidiEvents} from '../midi/types';
 
+import {BeatEvents} from './types';
+
+
 export type RootContextData = {
   actx: BaseAudioContext;
   lag: number;
   midiEvents: MidiEvents;
+  beatEvents: BeatEvents;
+  bpm: number;
 }
 
 export const RootCtx = createContext<RootContextData | null>(null);
@@ -37,4 +42,9 @@ export function useSendMidi() {
 export function useMidiEvents(): MidiEvents {
   const {midiEvents} = useRootCtx();
   return midiEvents;
+}
+
+export function useBeatEvents(): BeatEvents {
+  const {beatEvents} = useRootCtx();
+  return beatEvents;
 }

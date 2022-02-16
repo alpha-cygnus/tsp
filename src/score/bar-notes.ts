@@ -175,12 +175,12 @@ const beatSet: Parse<null, BarNoteData> = mapData(
 );
 
 const octUp: Parse<null, BarNoteData> = mapData(
-  match(/[>)]/, 'oct up'),
+  match(/[>)']/, 'oct up'),
   (data) => { data.oct++; },
 );
 
 const octDown: Parse<null, BarNoteData> = mapData(
-  match(/[<(]/, 'oct down'),
+  match(/[<(,]/, 'oct down'),
   (data) => { data.oct--; },
 );
 

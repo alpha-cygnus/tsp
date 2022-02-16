@@ -1,7 +1,11 @@
 // import React, { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import './App.css';
 import {Gain, Filter, Osc, Cut, ADSR} from './audio/comps';
 import {useNodeRef} from './audio/hooks';
+import { useSListen } from './hs/hooks';
+import { TSPRoot } from './root/comps';
+import { useBeatEvents } from './root/ctx';
 
 import {Part} from './score/comps';
 
@@ -40,6 +44,16 @@ export function TestSyn({freq}: {freq: number}) {
 //   );
 // }
 
+function Debug() {
+  const beats = useBeatEvents();
+  
+  useSListen(beats, useCallback((e) => {
+    console.log('BEAT', e);
+  }, []));
+
+  return null;
+}
+
 function App() {
   // const [playing, setPlaying] = useState(false);
 
@@ -49,8 +63,10 @@ function App() {
 
   return (
     <>
-      <Part>kb3 s4/4 a5 r10 c4. ^5. abcdefg
-        | s6/8 t8 a]a]a[[bb]]</Part>
+      <Part>kb3 s4/4 A5 r10 C4. ^5. ABCDEFG
+        | s6/8 t8 A'A'A,BB</Part>
+      <TSPRoot>
+      </TSPRoot>
     </>
   );
   /*
