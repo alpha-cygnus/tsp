@@ -8,56 +8,56 @@ import {RootContextData, RootCtx} from './ctx';
 
 
 type TSPRootProps = {
-	actx?: BaseAudioContext;
-	lag?: number;
-	children: any;
+  actx?: BaseAudioContext;
+  lag?: number;
+  children: any;
 }
 
 export function TSPRoot({actx: a, lag: l, children}: TSPRootProps) {
-	const midiEvents = useSNew<Timed<MidiEvent>>();
+  const midiEvents = useSNew<Timed<MidiEvent>>();
 
-	const actxRef = useRef(a || new AudioContext({
-		latencyHint: 'playback',
-	}));
+  const actxRef = useRef(a || new AudioContext({
+    latencyHint: 'playback',
+  }));
 
-	const data: RootContextData = useMemo((): RootContextData => {
-		const lag: number = l != null && l >= 0 ? l : 0.01;
-		return {
-			actx: actxRef.current,
-			lag,
-			midiEvents,
-		};
-	}, [l, midiEvents]);
+  const data: RootContextData = useMemo((): RootContextData => {
+    const lag: number = l != null && l >= 0 ? l : 0.01;
+    return {
+      actx: actxRef.current,
+      lag,
+      midiEvents,
+    };
+  }, [l, midiEvents]);
 
-	useEffect(() => {
-		const actx = actxRef.current;
-		if (!(actx instanceof AudioContext)) return;
-		if (actx.state !== 'suspended') return;
+  useEffect(() => {
+    const actx = actxRef.current;
+    if (!(actx instanceof AudioContext)) return;
+    if (actx.state !== 'suspended') return;
 
-		const resume = () => {
-			actx.resume();
-		};
-		let clean = false;
-		const cleanUp = () => {
-			if (clean) return;
-			document.removeEventListener('mousemove', resume);
-			document.removeEventListener('keydown', resume);
-			clean = true;
-		}
+    const resume = () => {
+      actx.resume();
+    };
+    let clean = false;
+    const cleanUp = () => {
+      if (clean) return;
+      document.removeEventListener('mousemove', resume);
+      document.removeEventListener('keydown', resume);
+      clean = true;
+    }
 
-		document.addEventListener('mousemove', resume);
-		document.addEventListener('keydown', resume);
-		
-		actx.addEventListener('statechange', () => {
-			if (actx.state === 'running') cleanUp();
-		});
+    document.addEventListener('mousemove', resume);
+    document.addEventListener('keydown', resume);
+    
+    actx.addEventListener('statechange', () => {
+      if (actx.state === 'running') cleanUp();
+    });
 
-		return cleanUp;
-	}, []);
+    return cleanUp;
+  }, []);
 
-	return (
-		<RootCtx.Provider value={data}>
-			{children}
-		</RootCtx.Provider>
-	)
+  return (
+    <RootCtx.Provider value={data}>
+      {children}
+    </RootCtx.Provider>
+  )
 }
