@@ -3,90 +3,9 @@ import {useCallback, useMemo} from 'react';
 import { MidiEvent } from './types';
 
 import {useMidiEvents, useRootCtx, RootCtx} from '../root/ctx';
-import { useSTFilter } from '../hs/hooks';
+import {useSTFilter} from '../hs/hooks';
 
-// type NoteSenderProps = {
-//   ch?: number;
-//   note?: number;
-//   vel?: number;
-//   className: string;
-//   children: any;
-// };
-
-// export function NoteSender({ch = 0, note = 60, className, children}: NoteSenderProps) {
-//   const send = useMidiSender();
-//   const [pressed, setPressed] = useState(false);
-//   const first = useRef(true);
-
-//   useEffect(() => {
-//     if (pressed) {
-//       console.log('ON!');
-//       send(midiOn(ch, note, 100));
-//     } else {
-//       if (first.current) {
-//         first.current = false;
-//         return;
-//       }
-//       console.log('OFF!');
-//       send(midiOff(ch, note, 100));
-//     }
-//   }, [send, pressed, ch, note]);
-
-//   return <div
-//     className={cs(className, {pressed})}
-//     onMouseDown={() => setPressed(true)}
-//     onMouseUp={() => setPressed(false)}
-//   >
-//     {children}
-//   </div>
-// }
-
-// type ChordSenderProps = {
-//   chs?: number[];
-//   chord: string;
-//   vel?: number;
-//   className: string;
-// };
-
-// export function ChordSender({chs = [0], chord, className}: ChordSenderProps) {
-//   const send = useMidiSender();
-//   const [pressed, setPressed] = useState(false);
-
-//   const ci = useMemo(() => {
-//     return Chord.get(chord);
-//   }, [chord]);
-
-//   const midiNotes = useMemo(() => {
-//     const ns = ci.notes.map((nn) => Midi.toMidi(nn + '4')).filter(Boolean) as number[];
-//     console.log('chord', ci, ns);
-//     return ns;
-//   }, [ci]);
-
-//   useEffect(() => {
-//     if (!pressed) return undefined;
-
-//     for (let i = 0; i < midiNotes.length; i++) {
-//       const note = midiNotes[i];
-//       const ch = chs[i % chs.length];
-//       send(midiOn(ch, note, 100));
-//     }
-//     return () => {
-//       for (let i = 0; i < midiNotes.length; i++) {
-//         const note = midiNotes[i];
-//         const ch = chs[i % chs.length];
-//         send(midiOff(ch, note, 100));
-//       }
-//     }
-//   }, [send, pressed, chs, midiNotes]);
-
-//   return <div
-//     className={cs(className, {pressed})}
-//     onMouseDown={() => setPressed(true)}
-//     onMouseUp={() => setPressed(false)}
-//   >
-//     {chord}
-//   </div>
-// }
+import './midi.css';
 
 type MidiFilterProps = {
   filter: (me: MidiEvent) => boolean;
@@ -111,4 +30,52 @@ export function MidiChannel({ch, children}: {ch: number; children: any}) {
   return <MidiFilter filter={filter}>
     {children}
   </MidiFilter>;
+}
+
+type PianoOctaveProps = {
+  oct: number;
+};
+
+export function PianoOctave({oct}: PianoOctaveProps) {
+  return (
+    <div className="piano-octave">
+      <div className="piano-chromas">
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((n) => (
+          <div
+            className={Boolean(n % 2) === n > 4 ? `piano-key white top${n > 4 ? 2 : 1}` : 'piano-key black'}
+          >
+            {}
+          </div>
+        ))}
+      </div>
+      <div className="piano-whites">
+        {[0, 2, 4, 5, 7, 9, 11].map((n) => (
+          <div
+            className="piano-key white bottom"
+          >
+            {}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+type PianoProps = {
+  octaves: number;
+};
+
+export function Piano({octaves}: PianoProps) {
+  const os = useMemo(() => {
+    const res: number[] = [];
+    const o1 = Math.floor(5 - octaves / 2)
+    for (let o = o1; o < o1 + octaves; o++) res.push(o);
+    return res;
+  }, [octaves]);
+
+  return (
+    <div className="piano">
+      {os.map((o) => <PianoOctave oct={o} />)}
+    </div>
+  )
 }
