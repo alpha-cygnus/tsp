@@ -1,11 +1,13 @@
-import {useCallback, useEffect, useMemo} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import cs from 'classnames';
 
-import { MidiEvent } from './types';
+import { MidiEvent, MidiEventBase, midiOff, MidiOff, midiOn, MidiOn } from './types';
 
-import {useMidiEvents, useRootCtx, RootCtx} from '../root/ctx';
-import {useSTFilter} from '../hs/hooks';
+import {useMidiEvents, useRootCtx, RootCtx, useSendMidi} from '../root/ctx';
+import {useSListen, useSTFilter} from '../hs/hooks';
 
 import './midi.scss';
+
 
 type MidiFilterProps = {
   filter: (me: MidiEvent) => boolean;
@@ -32,35 +34,102 @@ export function MidiChannel({ch, children}: {ch: number; children: any}) {
   </MidiFilter>;
 }
 
+function useMidiNoteSet() {
+  const midis = useMidiEvents();
+
+  const [notes, setNotes] = useState<number[]>([])
+
+  useSListen(midis, useCallback(([me]) => {
+    if (me instanceof MidiOn) {
+      setNotes((ns) => [...ns, me.note]);
+    }
+    if (me instanceof MidiOff) {
+      setNotes((ns) => ns.filter((n) => n !== me.note));
+    }
+  }, []));
+
+  useEffect(() => {
+    console.log('notes', notes);
+  }, [notes]);
+
+  return notes;
+}
+
+type PianoKeyProps = {
+  nn: number;
+  cls: string;
+  notes: number[];
+}
+
+function PianoKey({nn, cls, notes}: PianoKeyProps) {
+  const send = useSendMidi();
+
+  const click = useCallback((down: boolean) => () => {
+    const ev: MidiEventBase = down
+      ? midiOn(0, nn, 100)
+      : midiOff(0, nn, 100);
+    console.log('sending', ev);
+    send(ev);
+  }, [send, nn]);
+
+  const [clicked, setClicked] = useState(false);
+
+  useEffect(() => {
+    if (!clicked) return;
+    send(midiOn(0, nn, 100));
+
+    const up = () => {
+      send(midiOff(0, nn, 100));
+      setClicked(false);
+    };
+
+    document.addEventListener('mouseup', up);
+    return () => {
+      document.removeEventListener('mouseup', up);
+    }
+  }, [clicked]);
+
+  return (
+    <div
+      className={cs(
+        'piano-key',
+        cls,
+        notes.includes(nn) ? 'down' : null,
+      )}
+      onMouseDown={() => setClicked(true)}
+      onMouseUp={click(false)}
+    >
+      {' '}
+    </div>
+  );
+}
+
 type PianoOctaveProps = {
   oct: number;
+  notes: number[];
 };
 
-export function PianoOctave({oct}: PianoOctaveProps) {
+export function PianoOctave({oct, notes}: PianoOctaveProps) {
   useEffect(() => {
     console.log(oct);
   }, [oct]);
-  
+
   return (
     <div className="piano-octave">
       <div className="piano-blacks">
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((n) => (
-          <div
-            className={Boolean(n % 2) === (n > 4) ? `piano-key-spacer ${n > 4 ? 'narrow' : 'wide'}` : 'piano-key black'}
-            key={n}
-          >
-            {' '}
-          </div>
-        ))}
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((n) => {
+          if (Boolean(n % 2) === (n > 4)) return <div className={cs('piano-key-spacer', n > 4 ? 'narrow' : 'wide')}>{' '}</div>;
+          return <PianoKey key={n} nn={n + oct * 12} notes={notes} cls="black" />;
+        })}
       </div>
       <div className="piano-whites">
         {[0, 2, 4, 5, 7, 9, 11].map((n) => (
-          <div
-            className="piano-key white"
+          <PianoKey
+            cls="white"
+            nn={n + oct * 12}
             key={n}
-          >
-            {' '}
-          </div>
+            notes={notes}
+          />
         ))}
       </div>
     </div>
@@ -72,6 +141,8 @@ type PianoProps = {
 };
 
 export function Piano({octaves}: PianoProps) {
+  const notes = useMidiNoteSet();
+
   const os = useMemo(() => {
     const res: number[] = [];
     const o1 = Math.floor(5 - octaves / 2)
@@ -81,7 +152,7 @@ export function Piano({octaves}: PianoProps) {
 
   return (
     <div className="piano">
-      {os.map((o) => <PianoOctave key={o} oct={o} />)}
+      {os.map((o) => <PianoOctave key={o} oct={o} notes={notes} />)}
     </div>
   )
 }

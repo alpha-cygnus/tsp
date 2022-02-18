@@ -3,15 +3,14 @@ import React, {useEffect, useMemo, ReactElement} from 'react';
 import {Timed} from '../common/types';
 import {ParamEvent, ParamEvents} from '../params/types';
 import {useSADSR} from '../params/hs';
-import {useMidiEvents} from '../midi/ctx';
+import {useMidiEvents, useACtx} from '../root/ctx';
 import {useSOnOff} from '../midi/hs';
+import {HS} from '../hs/types';
 
 import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
 import {NodeInContext, useNodeIn} from './ctx';
 import {useConst, useFilter, useGain, useOsc} from './hooks';
-import {HS} from '../hs/types';
-import {useACtx} from '../root/ctx';
 
 
 type ConnProps = {
