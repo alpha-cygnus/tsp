@@ -1,11 +1,11 @@
-import {useCallback, useMemo} from 'react';
+import {useCallback, useEffect, useMemo} from 'react';
 
 import { MidiEvent } from './types';
 
 import {useMidiEvents, useRootCtx, RootCtx} from '../root/ctx';
 import {useSTFilter} from '../hs/hooks';
 
-import './midi.css';
+import './midi.scss';
 
 type MidiFilterProps = {
   filter: (me: MidiEvent) => boolean;
@@ -37,23 +37,29 @@ type PianoOctaveProps = {
 };
 
 export function PianoOctave({oct}: PianoOctaveProps) {
+  useEffect(() => {
+    console.log(oct);
+  }, [oct]);
+  
   return (
     <div className="piano-octave">
-      <div className="piano-chromas">
+      <div className="piano-blacks">
         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((n) => (
           <div
-            className={Boolean(n % 2) === n > 4 ? `piano-key white top${n > 4 ? 2 : 1}` : 'piano-key black'}
+            className={Boolean(n % 2) === (n > 4) ? `piano-key-spacer ${n > 4 ? 'narrow' : 'wide'}` : 'piano-key black'}
+            key={n}
           >
-            {}
+            {' '}
           </div>
         ))}
       </div>
       <div className="piano-whites">
         {[0, 2, 4, 5, 7, 9, 11].map((n) => (
           <div
-            className="piano-key white bottom"
+            className="piano-key white"
+            key={n}
           >
-            {}
+            {' '}
           </div>
         ))}
       </div>
@@ -75,7 +81,7 @@ export function Piano({octaves}: PianoProps) {
 
   return (
     <div className="piano">
-      {os.map((o) => <PianoOctave oct={o} />)}
+      {os.map((o) => <PianoOctave key={o} oct={o} />)}
     </div>
   )
 }

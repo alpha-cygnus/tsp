@@ -96,7 +96,7 @@ type ParseList<TS extends [...any[]], D> = {[I in keyof TS]: Parse<TS[I], D>};
 export function seq<TS extends [...any[]], D>(...ps: ParseList<TS, D>): Parse<TS, D> {
   return (s, loc) => {
     // @ts-ignore
-    const rs: TS = ps.map((p, i) => {
+    const rs: TS = ps.map((p) => {
       const [r, l] = p(s, loc);
       loc = l;
       return r;
@@ -110,7 +110,6 @@ type Upd<D> = (d: D) => void;
 export function map<A, B, D>(p: Parse<A, D>, f: (a: A, data: D, setData: (u: Upd<D>) => void) => B): Parse<B, D> {
   return (s, loc) => {
     const [r, l] = p(s, loc);
-    let res: B;
     let resLoc = l;
     const setData = (u: Upd<D>) => {
       const newData = produce(u)(l.data as Immutable<D>);
@@ -118,7 +117,7 @@ export function map<A, B, D>(p: Parse<A, D>, f: (a: A, data: D, setData: (u: Upd
         resLoc = {...l, data: newData};
       }
     };
-    res = f(r, l.data, setData);
+    const res = f(r, l.data, setData);
     return [res, resLoc];
   }
 }
@@ -135,7 +134,7 @@ export function mapData<T, D>(p: Parse<T, D>, f: (data: D, t: T) => void): Parse
 
 export function oneOf<T, D>(...ps: Parse<T, D>[]): Parse<T, D> {
   return (s, loc) => {
-    let es: ParseError<D>[] = [];
+    const es: ParseError<D>[] = [];
     for (const p of ps) {
       try {
         return p(s, loc);

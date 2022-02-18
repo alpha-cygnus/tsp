@@ -18,7 +18,7 @@ export function TestSyn({freq}: {freq: number}) {
   // const notes = useNoteToDetune();
 
   return (
-    <Gain name="vol" gain={[0, <ADSR name="env" a={0.01} d={0.1} s={0.1} r={0.5} max={0.3}/>]}>
+    <Gain name="vol" gain={<ADSR name="env" a={0.01} d={0.1} s={0.1} r={0.5} max={0.3}/>}>
       <Filter type="lowpass" detune={<ADSR a={0.1} d={0.6} s={0} r={0.5} max={10000} />}>
         <Osc name="saw" type="sawtooth" frequency={freq - 3} detune={[lfo /*, notes*/]} />
         <Osc name="saw" type="sawtooth" frequency={freq + 3} detune={[lfo /*, notes*/]} />
@@ -45,7 +45,7 @@ export function TestSyn({freq}: {freq: number}) {
 //   );
 // }
 
-function Debug() {
+export function Debug() {
   const beats = useBeatEvents();
   
   useSListen(beats, useCallback((e) => {

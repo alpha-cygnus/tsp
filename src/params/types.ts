@@ -60,7 +60,7 @@ export class PECancel implements ParamEvent {
     // else
     param.cancelScheduledValues(t);
   }
-  mul(v: number) {
+  mul(_v: number) {
     return this;
   }
 }

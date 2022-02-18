@@ -33,7 +33,7 @@ export function TSPRoot({actx: a, lag: l, bpm = 120, children}: TSPRootProps) {
       beatEvents,
       bpm,
     };
-  }, [l, midiEvents, beatEvents, bpm]);
+  }, [lag, midiEvents, beatEvents, bpm]);
 
   const [aState, setAState] = useState(actxRef.current.state);
 
@@ -111,7 +111,7 @@ export function TSPRoot({actx: a, lag: l, bpm = 120, children}: TSPRootProps) {
     return () => {
       clearTimeout(tmId);
     };
-  }, [aState]);
+  }, [aState, beatEvents]);
 
   return (
     <RootCtx.Provider value={data}>
