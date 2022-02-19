@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 
 import { useSNew } from '../hs/hooks';
 import {Timed} from '../common/types';
@@ -25,6 +25,11 @@ export function TSPRoot({actx: a, lag: l, bpm = 120, children}: TSPRootProps) {
 
   const lag: number = l != null && l >= 0 ? l : 0.01;
 
+  const sendMidi = useCallback((evt: MidiEvent, t: number = 0) => {
+    if (!t) t = actxRef.current.currentTime + lag;
+    midiEvents.send([evt, t]);
+  }, [lag, midiEvents]);
+
   const data: RootContextData = useMemo((): RootContextData => {
     return {
       actx: actxRef.current,
@@ -32,8 +37,9 @@ export function TSPRoot({actx: a, lag: l, bpm = 120, children}: TSPRootProps) {
       midiEvents,
       beatEvents,
       bpm,
+      sendMidi,
     };
-  }, [lag, midiEvents, beatEvents, bpm]);
+  }, [lag, midiEvents, beatEvents, bpm, sendMidi]);
 
   const [aState, setAState] = useState(actxRef.current.state);
 

@@ -8,6 +8,7 @@ export type RootContextData = {
   actx: BaseAudioContext;
   lag: number;
   midiEvents: MidiEvents;
+  sendMidi: (ev: MidiEvent) => void;
   beatEvents: BeatEvents;
   bpm: number;
 }
@@ -31,12 +32,8 @@ export function useGetTime() {
 }
 
 export function useSendMidi() {
-  const {midiEvents} = useRootCtx();
-  const getTime = useGetTime();
-  return useCallback((evt: MidiEvent, t: number = 0) => {
-    if (!t) t = getTime();
-    midiEvents.send([evt, t]);
-  }, [getTime, midiEvents]);
+  const {sendMidi} = useRootCtx();
+  return sendMidi;
 }
 
 export function useMidiEvents(): MidiEvents {

@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, ReactElement} from 'react';
+import React, {useEffect, useMemo, ReactElement, useRef, useState} from 'react';
 
 import {Timed} from '../common/types';
 import {ParamEvent, ParamEvents} from '../params/types';
@@ -10,7 +10,7 @@ import {HS} from '../hs/types';
 import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
 import {NodeInContext, useNodeIn} from './ctx';
-import {useConst, useFilter, useGain, useOsc} from './hooks';
+import {useAnalyser, useConst, useFilter, useGain, useOsc} from './hooks';
 
 
 type ConnProps = {
@@ -293,4 +293,77 @@ export function ADSR({
   } else {
     return <Const name={name} value={[0, adsr$]} {...without} />;
   }
+}
+
+type ScopeProps = WithIn & WithOut & {
+};
+
+export function Scope({...rest}: ScopeProps) {
+  const node = useAnalyser();
+
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const [paused, setPaused] = useState(false);
+
+  const width = 200;
+  const height = 100;
+
+  useEffect(() => {
+    if (paused) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const res = new Uint8Array(node.fftSize);
+    const canvasCtx = canvas.getContext('2d');
+    if (!canvasCtx) return;
+
+    let id: number;
+    const draw = () => {
+      node.getByteTimeDomainData(res);
+
+      canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+      canvasCtx.fillRect(0, 0, width, height);
+      
+      canvasCtx.lineWidth = 2;
+      canvasCtx.strokeStyle = 'rgb(0, 255, 0)';
+      canvasCtx.beginPath();
+      
+      const sliceWidth = 1; //width * 1.0 / res.length;
+      let i0 = 0;
+      for (let i = 1; i < res.length; i++) {
+        if (res[i] >= 128 && res[i - 1] < 128) {
+          i0 = i; break;
+        }
+      }
+      let x = 0;
+      for (let i = 0; i <= width / sliceWidth; i++) {
+        const v = res[i + i0] / 128.0;
+        const y = v * height / 2;
+
+        if (i === 0) {
+          canvasCtx.moveTo(x, y);
+        } else {
+          canvasCtx.lineTo(x, y);
+        }
+
+        x += sliceWidth;
+      }
+      // canvasCtx.lineTo(canvas.width, canvas.height / 2);
+      canvasCtx.stroke();
+
+      id = requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    return () => {
+      cancelAnimationFrame(id);
+    }
+  }, [node, paused]);
+
+  return <>
+    <NodeInOut node={node} {...rest} />
+    <div className="scope">
+      <canvas ref={canvasRef} width={width} height={height} onClick={() => setPaused(x => !x)} />
+    </div>
+  </>;
 }

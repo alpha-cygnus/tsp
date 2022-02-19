@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import cs from 'classnames';
 
-import { MidiEvent, MidiEventBase, midiOff, MidiOff, midiOn, MidiOn } from './types';
+import { MidiEvent, midiOff, MidiOff, midiOn, MidiOn } from './types';
 
 import {useMidiEvents, useRootCtx, RootCtx, useSendMidi} from '../root/ctx';
 import {useSListen, useSTFilter} from '../hs/hooks';
@@ -64,14 +64,6 @@ type PianoKeyProps = {
 function PianoKey({nn, cls, notes}: PianoKeyProps) {
   const send = useSendMidi();
 
-  const click = useCallback((down: boolean) => () => {
-    const ev: MidiEventBase = down
-      ? midiOn(0, nn, 100)
-      : midiOff(0, nn, 100);
-    console.log('sending', ev);
-    send(ev);
-  }, [send, nn]);
-
   const [clicked, setClicked] = useState(false);
 
   useEffect(() => {
@@ -97,7 +89,6 @@ function PianoKey({nn, cls, notes}: PianoKeyProps) {
         notes.includes(nn) ? 'down' : null,
       )}
       onMouseDown={() => setClicked(true)}
-      onMouseUp={click(false)}
     >
       {' '}
     </div>

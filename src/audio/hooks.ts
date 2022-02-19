@@ -59,3 +59,9 @@ export function useGain() {
   return node;
 }
 
+export function useAnalyser() {
+  const actx = useACtx();
+  const [node] = useState(actx.createAnalyser());
+
+  return node;
+}
