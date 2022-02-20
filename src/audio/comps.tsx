@@ -331,7 +331,8 @@ export function Scope({...rest}: ScopeProps) {
       let i0 = 0;
       for (let i = 1; i < res.length; i++) {
         if (res[i] >= 128 && res[i - 1] < 128) {
-          i0 = i; break;
+          i0 = res[i] - 128 < 128 - res[i - 1] ? i : i - 1;
+          break;
         }
       }
       let x = 0;

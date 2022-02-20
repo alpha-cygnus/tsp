@@ -1,34 +1,36 @@
 // import React, { useCallback, useState } from 'react';
 import { useCallback } from 'react';
 import './App.css';
-import {Gain, Filter, Osc, Cut, ADSR, Scope} from './audio/comps';
+import {Filter, Osc, Cut, ADSR, Scope} from './audio/comps';
 import {useNodeRef} from './audio/hooks';
 import { useSListen } from './hs/hooks';
 import { TSPRoot } from './root/comps';
-import { useBeatEvents } from './root/ctx';
+import { useBeatEvents, useMidiEvents } from './root/ctx';
 import {Piano} from './midi/comps';
 
 import {Part} from './score/comps';
+import { useDetuneFromNotes } from './midi/hs';
 
 // import {Key} from '@tonaljs/tonal';
 
 
-export function TestSyn({freq}: {freq: number}) {
+export function TestSyn({freq = 440}: {freq?: number}) {
   const lfo = useNodeRef();
-  // const notes = useNoteToDetune();
+  const midi$ = useMidiEvents();
+  const detune$ = useDetuneFromNotes(midi$);
 
   return (
-    <Gain name="vol" gain={<ADSR name="env" a={0.01} d={0.1} s={0.1} r={0.5} max={0.3}/>}>
+    <ADSR name="env" a={0.01} d={0.1} s={0.9} r={0.5} max={0.3}>
       <Filter type="lowpass" detune={<ADSR a={0.1} d={0.6} s={0} r={0.5} max={10000} />}>
-        <Osc name="saw" type="sawtooth" frequency={freq - 3} detune={[lfo /*, notes*/]} />
-        <Osc name="saw" type="sawtooth" frequency={freq + 3} detune={[lfo /*, notes*/]} />
+        <Osc name="saw" type="sawtooth" frequency={freq - 3} detune={[lfo, detune$]} />
+        <Osc name="saw" type="sawtooth" frequency={freq + 3} detune={[lfo, detune$]} />
       </Filter>
       <Cut>
         <ADSR name="lfo" a={0.5} d={1} s={1} r={0.5} max={30} delay={0.7} nodeRef={lfo}>
           <Osc type="sine" frequency={4} />
         </ADSR>
       </Cut>
-    </Gain>
+    </ADSR>
   );
 }
 
@@ -67,9 +69,9 @@ function App() {
       <Part>kb3 s4/4 A5 r10 C4. ^5. ABCDEFG
         | s6/8 t8 A'A'A,BB</Part>
       <TSPRoot>
-        <Piano octaves={3} />
+        <Piano octaves={2} />
         <Scope>
-          <Osc type="sine" frequency={440}/>
+          <TestSyn />
         </Scope>
       </TSPRoot>
     </>
