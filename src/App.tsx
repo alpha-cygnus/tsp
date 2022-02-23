@@ -1,7 +1,7 @@
 // import React, { useCallback, useState } from 'react';
 import { useCallback } from 'react';
 import './App.css';
-import {Filter, Osc, Cut, ADSR, Scope} from './audio/comps';
+import {Filter, Osc, Cut, ADSR, Scope, Destination} from './audio/comps';
 import {useNodeRef} from './audio/hooks';
 import { useSListen } from './hs/hooks';
 import { TSPRoot } from './root/comps';
@@ -70,9 +70,11 @@ function App() {
         | s6/8 t8 A'A'A,BB</Part>
       <TSPRoot>
         <Piano octaves={2} />
-        <Scope>
-          <TestSyn />
-        </Scope>
+        <Destination>
+          <Scope>
+            <TestSyn />
+          </Scope>
+        </Destination>
       </TSPRoot>
     </>
   );
