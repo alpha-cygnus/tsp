@@ -69,7 +69,7 @@ function App() {
       <Part>kb3 s4/4 A5 r10 C4. ^5. ABCDEFG
         | s6/8 t8 A'A'A,BB</Part>
       <TSPRoot>
-        <Piano octaves={2} />
+        <Piano from={24} to={71} />
         <Destination>
           <Scope>
             <TestSyn />

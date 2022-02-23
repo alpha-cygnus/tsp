@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import cs from 'classnames';
+import { styled } from '@stitches/react'; 
 
 import { MidiEvent, midiOff, MidiOff, midiOn, MidiOn } from './types';
 
@@ -55,13 +55,61 @@ function useMidiNoteSet() {
   return notes;
 }
 
+
+const isWhite = (n: number): boolean => {
+  n = n % 12;
+  return Boolean(n % 2) === (n > 4);
+}
+
+const PianoKeyDiv = styled('div', {
+  border: '1px solid black',
+  borderBottomLeftRadius: 4,
+  borderBottomRightRadius: 4,
+  cursor: 'pointer',
+  variants: {
+    color: {
+      white: {
+        height: 100,
+        background: 'white',
+        width: 38,
+      },
+      black: {
+        height: 80,
+        background: 'black',
+        width: 22,
+        pointerEvents: 'all',
+      },
+    },
+    down: {
+      true: {
+      },
+    },
+  },
+  compoundVariants: [
+    {
+      color: 'black',
+      down: true,
+      css: {
+        backgroundColor: 'blue',
+        borderColor: 'blue',
+      },
+    },
+    {
+      color: 'white',
+      down: true,
+      css: {
+        backgroundColor: 'yellow',
+      },
+    },
+  ]
+})
+
 type PianoKeyProps = {
   nn: number;
-  cls: string;
   notes: number[];
 }
 
-function PianoKey({nn, cls, notes}: PianoKeyProps) {
+function PianoKey({nn, notes}: PianoKeyProps) {
   const send = useSendMidi();
 
   const [clicked, setClicked] = useState(false);
@@ -82,68 +130,69 @@ function PianoKey({nn, cls, notes}: PianoKeyProps) {
   }, [clicked]);
 
   return (
-    <div
-      className={cs(
-        'piano-key',
-        cls,
-        notes.includes(nn) ? 'down' : null,
-      )}
+    <PianoKeyDiv
+      color={isWhite(nn) ? 'white' : 'black'}
+      down={notes.includes(nn)}
       onMouseDown={() => setClicked(true)}
-    >
-      {' '}
-    </div>
+    >{' '}</PianoKeyDiv>
   );
 }
 
-type PianoOctaveProps = {
-  oct: number;
-  notes: number[];
-};
+const FlexRowDiv = styled('div', {
+  display: 'flex',
+  flexDirection: 'row',
+});
 
-export function PianoOctave({oct, notes}: PianoOctaveProps) {
-  useEffect(() => {
-    console.log(oct);
-  }, [oct]);
+const PianoTopDiv = styled(FlexRowDiv, {
+  position: 'absolute',
+  pointerEvents: 'none',
+});
 
-  return (
-    <div className="piano-octave">
-      <div className="piano-blacks">
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((n) => {
-          if (Boolean(n % 2) === (n > 4)) return <div className={cs('piano-key-spacer', n > 4 ? 'narrow' : 'wide')}>{' '}</div>;
-          return <PianoKey key={n} nn={n + oct * 12} notes={notes} cls="black" />;
-        })}
-      </div>
-      <div className="piano-whites">
-        {[0, 2, 4, 5, 7, 9, 11].map((n) => (
-          <PianoKey
-            cls="white"
-            nn={n + oct * 12}
-            key={n}
-            notes={notes}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
+const PianoBottomDiv = styled(FlexRowDiv, {
+});
 
 type PianoProps = {
-  octaves: number;
+  from: number;
+  to: number;
 };
 
-export function Piano({octaves}: PianoProps) {
+const PianoSepDiv = styled('div', {
+  variants: {
+    wide: {
+      true: {
+        width: 24,
+      },
+      false: {
+        width: 22,
+      },
+    },
+  },
+});
+
+const PianoDiv = styled('div', {
+  position: 'relative',
+});
+
+export function Piano({from, to}: PianoProps) {
   const notes = useMidiNoteSet();
 
-  const os = useMemo(() => {
-    const res: number[] = [];
-    const o1 = Math.floor(5 - octaves / 2)
-    for (let o = o1; o < o1 + octaves; o++) res.push(o);
-    return res;
-  }, [octaves]);
+  const nns = useMemo(() => {
+    const result: number[] = [];
+    for (let n = from; n <= to; n++) result.push(n);
+    return result;
+  }, [from, to]);
 
   return (
-    <div className="piano">
-      {os.map((o) => <PianoOctave key={o} oct={o} notes={notes} />)}
-    </div>
+    <PianoDiv>
+      <PianoTopDiv>
+        {nns.map((n) => {
+          if (isWhite(n)) return <PianoSepDiv wide={n % 12 <= 4} />;
+          return <PianoKey key={n} nn={n} notes={notes} />;
+        })}
+      </PianoTopDiv>
+      <PianoBottomDiv>
+        {nns.filter(isWhite).map((n) => <PianoKey key={n} nn={n} notes={notes} />)}
+      </PianoBottomDiv>
+    </PianoDiv>
   )
 }

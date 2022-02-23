@@ -4,6 +4,7 @@
   "private": true,
   "homepage": "http://alpha-cygnus.github.io/tsp",
   "dependencies": {
+    "@stitches/react": "^1.2.6",
     "classnames": "^2.2.6",
     "immer": "^9.0.12",
     "lodash": "^4.17.20",
@@ -34,8 +35,7 @@
     ]
   },
   "devDependencies": {
-    "@parcel/transformer-sass": "2.3.1",
-    "@types/classnames": "^2.2.11",
+    "@parcel/transformer-sass": "2.3.2",
     "@types/jest": "^26.0.15",
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.0.0",
