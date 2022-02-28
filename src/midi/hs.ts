@@ -1,7 +1,8 @@
 import {Timed} from '../common/types';
 import {TimedHS} from '../hs/types';
 import {useSFlatMap} from '../hs/hooks';
-import {ParamEvents, ParamEvent, peValue} from '../params/types';
+import {ParamEvents, ParamEvent} from '../params/types';
+import * as PE from '../params/events';
 import {MidiEvent, MidiEvents, MidiOn} from './types';
 import {isTriggerOff, isTriggerOn} from './utils';
 
@@ -16,7 +17,7 @@ export function useSOnOff(midi$: MidiEvents): TimedHS<boolean> {
 }
 
 const detuneFmap = ([me, t]: Timed<MidiEvent>): Timed<ParamEvent>[] => {
-  if (me instanceof MidiOn) return [[peValue((me.note - 69) * 100), t]];
+  if (me instanceof MidiOn) return [[PE.value((me.note - 69) * 100), t]];
   return [];
 }
 

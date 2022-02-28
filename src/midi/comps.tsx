@@ -1,7 +1,9 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import { styled } from '@stitches/react'; 
 
-import { MidiEvent, midiOff, MidiOff, midiOn, MidiOn } from './types';
+import { MidiEvent, MidiOff, MidiOn } from './types';
+
+import * as ME from './events';
 
 import {useMidiEvents, useRootCtx, RootCtx, useSendMidi} from '../root/ctx';
 import {useSListen, useSTFilter} from '../hs/hooks';
@@ -116,10 +118,10 @@ function PianoKey({nn, notes}: PianoKeyProps) {
 
   useEffect(() => {
     if (!clicked) return;
-    send(midiOn(0, nn, 100));
+    send(ME.on(0, nn, 100));
 
     const up = () => {
-      send(midiOff(0, nn, 100));
+      send(ME.off(0, nn, 100));
       setClicked(false);
     };
 

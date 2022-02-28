@@ -19,8 +19,6 @@ export class PEValue implements ParamEvent {
   }
 }
 
-export const peValue = (v: number) => new PEValue(v);
-
 export class PELinear implements ParamEvent {
   v: number;
   constructor (v: number) {
@@ -33,8 +31,6 @@ export class PELinear implements ParamEvent {
     return new PELinear(this.v * v);
   }
 }
-
-export const peLinear = (v: number) => new PELinear(v);
 
 export class PETarget implements ParamEvent {
   v: number;
@@ -51,8 +47,6 @@ export class PETarget implements ParamEvent {
   }
 }
 
-export const peTarget = (v: number, tc: number) => new PETarget(v, tc);
-
 export class PECancel implements ParamEvent {
   apply(param: AudioParam, t: number) {
     // if (param.cancelAndHoldAtTime)
@@ -64,7 +58,5 @@ export class PECancel implements ParamEvent {
     return this;
   }
 }
-
-export const peCancel = () => new PECancel();
 
 export type ParamEvents = TimedHS<ParamEvent>;

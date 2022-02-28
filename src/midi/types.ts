@@ -23,8 +23,6 @@ export class MidiOn extends MidiEventBase {
   }
 }
 
-export const midiOn = (ch: number, note: number, vel: number) => new MidiOn(ch, note, vel);
-
 export class MidiOff extends MidiEventBase {
   note: number;
   vel: number;
@@ -35,7 +33,5 @@ export class MidiOff extends MidiEventBase {
     this.vel = vel;
   }
 }
-
-export const midiOff = (ch: number, note: number, vel: number) => new MidiOff(ch, note, vel);
 
 export type MidiEvents = TimedHS<MidiEvent>;

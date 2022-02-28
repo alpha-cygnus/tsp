@@ -3,7 +3,8 @@ import {useCallback} from 'react';
 import {Timed} from '../common/types';
 import {TimedHS} from '../hs/types';
 import {useSFlatMap} from '../hs/hooks';
-import {ParamEvent, peCancel, peTarget} from '../params/types';
+import {ParamEvent} from '../params/types';
+import {cancel, target} from '../params/events';
 
 export function useSADSR(
   trig$: TimedHS<boolean>,
@@ -17,14 +18,14 @@ export function useSADSR(
   return useSFlatMap(trig$, useCallback(([v, t]: Timed<boolean>): Timed<ParamEvent>[] => {
     if (v) {
       return  [
-        [peCancel(), t + del],
-        [peTarget(max, a / 4), t + del],
-        [peTarget(s * max, d / 4), t + d + del],
+        [cancel(), t + del],
+        [target(max, a / 4), t + del],
+        [target(s * max, d / 4), t + d + del],
       ];
     } else {
       return [
-        [peCancel(), t],
-        [peTarget(0, r / 4), t],
+        [cancel(), t],
+        [target(0, r / 4), t],
       ]
     }
   }, [a, d, s, r, max, del]));
