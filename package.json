@@ -4,7 +4,6 @@
   "private": true,
   "homepage": "http://alpha-cygnus.github.io/tsp",
   "dependencies": {
-    "@stitches/react": "^1.2.6",
     "classnames": "^2.2.6",
     "immer": "^9.0.12",
     "lodash": "^4.17.20",
@@ -35,18 +34,18 @@
     ]
   },
   "devDependencies": {
-    "@parcel/transformer-sass": "2.3.2",
+    "@parcel/transformer-sass": "^2.7",
     "@types/jest": "^26.0.15",
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.0.0",
     "@types/react": "^16.9.53",
     "@types/react-dom": "^16.9.8",
-    "@typescript-eslint/eslint-plugin": "^5.12.0",
-    "@typescript-eslint/parser": "^5.12.0",
-    "eslint": "^8.9.0",
-    "eslint-plugin-react": "^7.28.0",
-    "gh-pages": "^3.1.0",
-    "parcel": "^2.3.1",
-    "typescript": "^4.4"
+    "@typescript-eslint/eslint-plugin": "^5.39.0",
+    "@typescript-eslint/parser": "^5.39.0",
+    "eslint": "^8.24",
+    "eslint-plugin-react": "^7.31",
+    "gh-pages": "^4.0",
+    "parcel": "^2.7",
+    "typescript": "^4.8"
   }
 }

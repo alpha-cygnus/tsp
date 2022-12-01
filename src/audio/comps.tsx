@@ -1,12 +1,5 @@
 import React, {useEffect, useMemo, ReactElement, useRef, useState} from 'react';
 
-import {Timed} from '../common/types';
-import {ParamEvent, ParamEvents} from '../params/types';
-import {useSADSR} from '../params/hs';
-import {useMidiEvents, useACtx} from '../root/ctx';
-import {useSOnOff} from '../midi/hs';
-import {HS} from '../hs/types';
-
 import {AudioOut, AudioIn, WithIn, WithOut, WithInChildren, AParamProp} from './types';
 import {getNodeId, doDisconnect, doConnect, asArray, setNodeId} from './utils';
 import {NodeInContext, useNodeIn} from './ctx';
@@ -322,11 +315,11 @@ export function Scope({...rest}: ScopeProps) {
 
       canvasCtx.fillStyle = 'rgb(0, 0, 0)';
       canvasCtx.fillRect(0, 0, width, height);
-      
+
       canvasCtx.lineWidth = 2;
       canvasCtx.strokeStyle = 'rgb(0, 255, 0)';
       canvasCtx.beginPath();
-      
+
       const sliceWidth = 1; //width * 1.0 / res.length;
       let i0 = 0;
       for (let i = 1; i < res.length; i++) {
